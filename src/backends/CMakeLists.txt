@@ -1,5 +1,8 @@
 add_subdirectory(drm)
 add_subdirectory(fakeinput)
+if (KWIN_BUILD_EIS)
+    add_subdirectory(libeis)
+endif()
 add_subdirectory(libinput)
 add_subdirectory(virtual)
 add_subdirectory(wayland)
