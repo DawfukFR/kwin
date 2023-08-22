@@ -803,7 +803,11 @@ void Workspace::addWaylandWindow(Window *window)
         updateClientArea();
     }
     if (window->wantsInput() && !window->isMinimized()) {
-        activateWindow(window);
+        if (!window->isDesktop()
+            // If there's no active window, make this desktop the active one.
+            || (activeWindow() == nullptr && should_get_focus.count() == 0)) {
+            activateWindow(window);
+        }
     }
     updateTabbox();
     Q_EMIT windowAdded(window);
