@@ -37,6 +37,7 @@ public:
     void setRefreshRate(uint32_t maximum);
     void pageFlipped(std::chrono::nanoseconds timestamp);
     bool pageflipsPending();
+    DrmAtomicCommit *lastFlippedCommit() const;
 
 Q_SIGNALS:
     void commitFailed();
@@ -47,6 +48,7 @@ private:
     void optimizeCommits();
 
     std::unique_ptr<DrmCommit> m_committed;
+    std::unique_ptr<DrmAtomicCommit> m_flipped;
     std::vector<std::unique_ptr<DrmAtomicCommit>> m_commits;
     std::unique_ptr<QThread> m_thread;
     std::mutex m_mutex;

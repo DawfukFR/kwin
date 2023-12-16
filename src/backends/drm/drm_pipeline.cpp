@@ -83,7 +83,7 @@ DrmPipeline::Error DrmPipeline::present()
         if (Error err = prepareAtomicCommit(fullState.get(), CommitMode::Test); err != Error::None) {
             return err;
         }
-        if (!fullState->test()) {
+        if (!fullState->test(m_commitThread->lastFlippedCommit())) {
             return errnoToError();
         }
         // only give the actual state update to the commit thread, so that it can potentially reorder the commits
@@ -224,6 +224,7 @@ static QRect centerBuffer(const QSize &bufferSize, const QSize &modeSize)
 DrmPipeline::Error DrmPipeline::prepareAtomicPresentation(DrmAtomicCommit *commit)
 {
     commit->setPresentationMode(m_pending.presentationMode);
+    commit->setTearing(m_pending.presentationMode == PresentationMode::Async || m_pending.presentationMode == PresentationMode::AdaptiveAsync);
     if (m_connector->contentType.isValid()) {
         commit->addEnum(m_connector->contentType, m_pending.contentType);
     }

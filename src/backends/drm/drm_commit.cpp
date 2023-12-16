@@ -70,14 +70,19 @@ void DrmAtomicCommit::setVrr(DrmCrtc *crtc, bool vrr)
     m_vrr = vrr;
 }
 
+void DrmAtomicCommit::setTearing(bool enable)
+{
+    m_tearing = enable;
+}
+
 void DrmAtomicCommit::setPresentationMode(PresentationMode mode)
 {
     m_mode = mode;
 }
 
-bool DrmAtomicCommit::test()
+bool DrmAtomicCommit::test(DrmAtomicCommit *currentState)
 {
-    return doCommit(DRM_MODE_ATOMIC_TEST_ONLY | DRM_MODE_ATOMIC_NONBLOCK);
+    return doCommit(DRM_MODE_ATOMIC_TEST_ONLY | DRM_MODE_ATOMIC_NONBLOCK | (m_tearing ? DRM_MODE_PAGE_FLIP_ASYNC : 0), currentState);
 }
 
 bool DrmAtomicCommit::testAllowModeset()
@@ -85,9 +90,9 @@ bool DrmAtomicCommit::testAllowModeset()
     return doCommit(DRM_MODE_ATOMIC_TEST_ONLY | DRM_MODE_ATOMIC_ALLOW_MODESET);
 }
 
-bool DrmAtomicCommit::commit()
+bool DrmAtomicCommit::commit(DrmAtomicCommit *currentState)
 {
-    return doCommit(DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT);
+    return doCommit(DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT | (m_tearing ? DRM_MODE_PAGE_FLIP_ASYNC : 0), currentState);
 }
 
 bool DrmAtomicCommit::commitModeset()
@@ -96,7 +101,7 @@ bool DrmAtomicCommit::commitModeset()
     return doCommit(DRM_MODE_ATOMIC_ALLOW_MODESET);
 }
 
-bool DrmAtomicCommit::doCommit(uint32_t flags)
+bool DrmAtomicCommit::doCommit(uint32_t flags, DrmAtomicCommit *currentState)
 {
     std::vector<uint32_t> objects;
     std::vector<uint32_t> propertyCounts;
@@ -104,18 +109,31 @@ bool DrmAtomicCommit::doCommit(uint32_t flags)
     std::vector<uint64_t> values;
     objects.reserve(m_properties.size());
     propertyCounts.reserve(m_properties.size());
-    uint64_t totalPropertiesCount = 0;
     for (const auto &[object, properties] : m_properties) {
-        objects.push_back(object);
-        propertyCounts.push_back(properties.size());
-        totalPropertiesCount += properties.size();
-    }
-    propertyIds.reserve(totalPropertiesCount);
-    values.reserve(totalPropertiesCount);
-    for (const auto &[object, properties] : m_properties) {
+        size_t i = 0;
         for (const auto &[property, value] : properties) {
+            // The kernel rejects async commits that contain anything else than FB_ID of the primary plane,
+            // even if the property values aren't actually modified.
+            // To make async commits still possible, filter out properties that haven't changed on our side
+            if (m_tearing && currentState) {
+                const auto objIt = currentState->m_properties.find(object);
+                if (objIt != currentState->m_properties.end()) {
+                    const auto propIt = objIt->second.find(property);
+                    if (propIt != objIt->second.end()) {
+                        const uint64_t previousValue = propIt->second;
+                        if (previousValue == value) {
+                            continue;
+                        }
+                    }
+                }
+            }
             propertyIds.push_back(property);
             values.push_back(value);
+            i++;
+        }
+        if (i > 0) {
+            objects.push_back(object);
+            propertyCounts.push_back(i);
         }
     }
     drm_mode_atomic commitData{
@@ -194,6 +212,7 @@ void DrmAtomicCommit::merge(DrmAtomicCommit *onTop)
         m_vrr = onTop->m_vrr;
     }
     m_cursorOnly &= onTop->isCursorOnly();
+    m_tearing &= onTop->m_tearing;
 }
 
 void DrmAtomicCommit::setCursorOnly(bool cursor)
@@ -204,6 +223,11 @@ void DrmAtomicCommit::setCursorOnly(bool cursor)
 bool DrmAtomicCommit::isCursorOnly() const
 {
     return m_cursorOnly;
+}
+
+bool DrmAtomicCommit::tearing() const
+{
+    return m_tearing;
 }
 
 DrmLegacyCommit::DrmLegacyCommit(DrmPipeline *pipeline, const std::shared_ptr<DrmFramebuffer> &buffer)
