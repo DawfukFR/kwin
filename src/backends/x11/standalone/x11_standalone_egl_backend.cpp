@@ -407,7 +407,7 @@ OutputLayer *EglBackend::primaryLayer(Output *output)
 
 void EglBackend::vblank(std::chrono::nanoseconds timestamp)
 {
-    m_frame->presented(std::chrono::nanoseconds::zero(), timestamp, PresentationMode::VSync);
+    m_frame->presented(timestamp, PresentationMode::VSync);
     m_frame.reset();
 }
 

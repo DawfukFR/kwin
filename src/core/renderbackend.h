@@ -65,10 +65,10 @@ private:
 class KWIN_EXPORT OutputFrame
 {
 public:
-    explicit OutputFrame(RenderLoop *loop);
+    explicit OutputFrame(RenderLoop *loop, std::chrono::nanoseconds refreshDuration);
     ~OutputFrame();
 
-    void presented(std::chrono::nanoseconds refreshDuration, std::chrono::nanoseconds timestamp, PresentationMode mode);
+    void presented(std::chrono::nanoseconds timestamp, PresentationMode mode);
     void failed();
 
     void addFeedback(std::unique_ptr<PresentationFeedback> &&feedback);
@@ -83,6 +83,7 @@ public:
 
 private:
     RenderLoop *const m_loop;
+    const std::chrono::nanoseconds m_refreshDuration;
     std::vector<std::unique_ptr<PresentationFeedback>> m_feedbacks;
     std::optional<ContentType> m_contentType;
     PresentationMode m_presentationMode = PresentationMode::VSync;
