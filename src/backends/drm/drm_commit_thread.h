@@ -43,9 +43,6 @@ public:
      */
     std::chrono::nanoseconds safetyMargin() const;
 
-Q_SIGNALS:
-    void commitFailed();
-
 private:
     void clearDroppedCommits();
     TimePoint estimateNextVblank(TimePoint now) const;

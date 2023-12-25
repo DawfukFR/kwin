@@ -43,7 +43,7 @@ public:
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
     bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
-    bool scanout(SurfaceItem *surfaceItem) override;
+    bool scanout(SurfaceItem *surfaceItem, const std::shared_ptr<OutputFrame> &frame) override;
 
 private:
     WaylandOutput *m_waylandOutput;

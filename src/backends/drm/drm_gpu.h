@@ -37,6 +37,7 @@ class DrmVirtualOutput;
 class EglDisplay;
 class GraphicsBuffer;
 class GraphicsBufferAllocator;
+class OutputFrame;
 
 class DrmLease : public QObject
 {
@@ -104,7 +105,7 @@ public:
 
     DrmPipeline::Error testPendingConfiguration();
     bool needsModeset() const;
-    bool maybeModeset();
+    bool maybeModeset(const std::shared_ptr<OutputFrame> &frame);
 
     GraphicsBufferAllocator *graphicsBufferAllocator() const;
     std::shared_ptr<DrmFramebuffer> importBuffer(GraphicsBuffer *buffer, FileDescriptor &&explicitFence);
@@ -164,6 +165,7 @@ private:
 
     std::unique_ptr<QSocketNotifier> m_socketNotifier;
     QSize m_cursorSize;
+    std::vector<std::shared_ptr<OutputFrame>> m_pendingModesetFrames;
 };
 
 }

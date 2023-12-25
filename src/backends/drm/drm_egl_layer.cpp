@@ -97,7 +97,7 @@ ColorDescription EglGbmLayer::colorDescription() const
     return m_surface.colorDescription();
 }
 
-bool EglGbmLayer::scanout(SurfaceItem *surfaceItem)
+bool EglGbmLayer::scanout(SurfaceItem *surfaceItem, const std::shared_ptr<OutputFrame> &frame)
 {
     static bool valid;
     static const bool directScanoutDisabled = qEnvironmentVariableIntValue("KWIN_DRM_NO_DIRECT_SCANOUT", &valid) == 1 && valid;
@@ -140,7 +140,7 @@ bool EglGbmLayer::scanout(SurfaceItem *surfaceItem)
         return false;
     }
     m_scanoutBuffer = m_pipeline->gpu()->importBuffer(buffer, FileDescriptor{});
-    if (m_scanoutBuffer && m_pipeline->testScanout()) {
+    if (m_scanoutBuffer && m_pipeline->testScanout(frame)) {
         m_dmabufFeedback.scanoutSuccessful(surface);
         m_currentDamage = surfaceItem->mapFromBuffer(surfaceItem->damage());
         surfaceItem->resetDamage();

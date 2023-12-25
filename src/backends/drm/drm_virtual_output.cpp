@@ -9,6 +9,7 @@
 */
 #include "drm_virtual_output.h"
 
+#include "core/renderbackend.h"
 #include "drm_backend.h"
 #include "drm_gpu.h"
 #include "drm_layer.h"
@@ -57,7 +58,7 @@ bool DrmVirtualOutput::present(const std::shared_ptr<OutputFrame> &frame)
 void DrmVirtualOutput::vblank(std::chrono::nanoseconds timestamp)
 {
     if (m_pageFlipPending) {
-        DrmAbstractOutput::pageFlipped(timestamp, PresentationMode::VSync);
+        m_frame->presented(timestamp, PresentationMode::VSync);
     }
 }
 

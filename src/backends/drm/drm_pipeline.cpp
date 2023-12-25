@@ -42,11 +42,6 @@ DrmPipeline::DrmPipeline(DrmConnector *conn)
     : m_connector(conn)
     , m_commitThread(std::make_unique<DrmCommitThread>(conn->gpu(), conn->connectorName()))
 {
-    QObject::connect(m_commitThread.get(), &DrmCommitThread::commitFailed, [this]() {
-        if (m_output) {
-            m_output->frameFailed();
-        }
-    });
 }
 
 DrmPipeline::~DrmPipeline()
@@ -56,13 +51,17 @@ DrmPipeline::~DrmPipeline()
     }
 }
 
-bool DrmPipeline::testScanout()
+bool DrmPipeline::testScanout(const std::shared_ptr<OutputFrame> &frame)
 {
     if (gpu()->needsModeset()) {
         return false;
     }
     if (gpu()->atomicModeSetting()) {
-        return commitPipelines({this}, CommitMode::Test) == Error::None;
+        auto fullState = std::make_unique<DrmAtomicCommit>(QList<DrmPipeline *>{this});
+        if (Error err = prepareAtomicCommit(fullState.get(), CommitMode::Test, frame); err != Error::None) {
+            return false;
+        }
+        return fullState->test();
     } else {
         if (m_primaryLayer->currentBuffer()->buffer()->size() != m_pending.mode->size()) {
             // scaling isn't supported with the legacy API
@@ -70,7 +69,7 @@ bool DrmPipeline::testScanout()
         }
         // no other way to test than to do it.
         // As we only have a maximum of one test per scanout cycle, this is fine
-        const bool ret = presentLegacy() == Error::None;
+        const bool ret = presentLegacy(frame) == Error::None;
         if (ret) {
             m_didLegacyScanoutHack = true;
         }
@@ -78,13 +77,13 @@ bool DrmPipeline::testScanout()
     }
 }
 
-DrmPipeline::Error DrmPipeline::present()
+DrmPipeline::Error DrmPipeline::present(const std::shared_ptr<OutputFrame> &frame)
 {
     Q_ASSERT(m_pending.crtc);
     if (gpu()->atomicModeSetting()) {
         // test the full state, to take pending commits into account
         auto fullState = std::make_unique<DrmAtomicCommit>(QList<DrmPipeline *>{this});
-        if (Error err = prepareAtomicCommit(fullState.get(), CommitMode::Test); err != Error::None) {
+        if (Error err = prepareAtomicCommit(fullState.get(), CommitMode::Test, frame); err != Error::None) {
             return err;
         }
         if (!fullState->test()) {
@@ -92,7 +91,7 @@ DrmPipeline::Error DrmPipeline::present()
         }
         // only give the actual state update to the commit thread, so that it can potentially reorder the commits
         auto primaryPlaneUpdate = std::make_unique<DrmAtomicCommit>(QList<DrmPipeline *>{this});
-        if (Error err = prepareAtomicPresentation(primaryPlaneUpdate.get()); err != Error::None) {
+        if (Error err = prepareAtomicPresentation(primaryPlaneUpdate.get(), frame); err != Error::None) {
             return err;
         }
         if (m_pending.needsModesetProperties && !prepareAtomicModeset(primaryPlaneUpdate.get())) {
@@ -107,14 +106,14 @@ DrmPipeline::Error DrmPipeline::present()
             m_didLegacyScanoutHack = false;
             return Error::None;
         }
-        return presentLegacy();
+        return presentLegacy(frame);
     }
 }
 
-bool DrmPipeline::maybeModeset()
+bool DrmPipeline::maybeModeset(const std::shared_ptr<OutputFrame> &frame)
 {
     m_modesetPresentPending = true;
-    return gpu()->maybeModeset();
+    return gpu()->maybeModeset(frame);
 }
 
 DrmPipeline::Error DrmPipeline::commitPipelines(const QList<DrmPipeline *> &pipelines, CommitMode mode, const QList<DrmObject *> &unusedObjects)
@@ -141,7 +140,7 @@ DrmPipeline::Error DrmPipeline::commitPipelinesAtomic(const QList<DrmPipeline *>
         }
     }
     for (const auto &pipeline : pipelines) {
-        if (Error err = pipeline->prepareAtomicCommit(commit.get(), mode); err != Error::None) {
+        if (Error err = pipeline->prepareAtomicCommit(commit.get(), mode, nullptr); err != Error::None) {
             return err;
         }
     }
@@ -156,7 +155,7 @@ DrmPipeline::Error DrmPipeline::commitPipelinesAtomic(const QList<DrmPipeline *>
         }
         const bool withoutModeset = std::ranges::all_of(pipelines, [](DrmPipeline *pipeline) {
             auto commit = std::make_unique<DrmAtomicCommit>(QVector<DrmPipeline *>{pipeline});
-            return pipeline->prepareAtomicCommit(commit.get(), CommitMode::TestAllowModeset) == Error::None && commit->test();
+            return pipeline->prepareAtomicCommit(commit.get(), CommitMode::TestAllowModeset, nullptr) == Error::None && commit->test();
         });
         for (const auto &pipeline : pipelines) {
             pipeline->m_pending.needsModeset = !withoutModeset;
@@ -191,10 +190,10 @@ DrmPipeline::Error DrmPipeline::commitPipelinesAtomic(const QList<DrmPipeline *>
     }
 }
 
-DrmPipeline::Error DrmPipeline::prepareAtomicCommit(DrmAtomicCommit *commit, CommitMode mode)
+DrmPipeline::Error DrmPipeline::prepareAtomicCommit(DrmAtomicCommit *commit, CommitMode mode, const std::shared_ptr<OutputFrame> &frame)
 {
     if (activePending()) {
-        if (Error err = prepareAtomicPresentation(commit); err != Error::None) {
+        if (Error err = prepareAtomicPresentation(commit, frame); err != Error::None) {
             return err;
         }
         if (m_pending.crtc->cursorPlane()) {
@@ -226,7 +225,7 @@ static QRect centerBuffer(const QSize &bufferSize, const QSize &modeSize)
     }
 }
 
-DrmPipeline::Error DrmPipeline::prepareAtomicPresentation(DrmAtomicCommit *commit)
+DrmPipeline::Error DrmPipeline::prepareAtomicPresentation(DrmAtomicCommit *commit, const std::shared_ptr<OutputFrame> &frame)
 {
     commit->setPresentationMode(m_pending.presentationMode);
     if (m_connector->contentType.isValid()) {
@@ -257,7 +256,7 @@ DrmPipeline::Error DrmPipeline::prepareAtomicPresentation(DrmAtomicCommit *commi
     }
     const auto primary = m_pending.crtc->primaryPlane();
     primary->set(commit, QPoint(0, 0), fb->buffer()->size(), centerBuffer(fb->buffer()->size(), m_pending.mode->size()));
-    commit->addBuffer(m_pending.crtc->primaryPlane(), fb);
+    commit->addBuffer(m_pending.crtc->primaryPlane(), fb, frame);
     if (fb->buffer()->dmabufAttributes()->format == DRM_FORMAT_NV12) {
         if (!primary->colorEncoding.isValid() || !primary->colorRange.isValid()) {
             // don't allow NV12 direct scanout if we don't know what the driver will do
@@ -281,7 +280,7 @@ void DrmPipeline::prepareAtomicCursor(DrmAtomicCommit *commit)
     const auto layer = cursorLayer();
     plane->set(commit, QPoint(0, 0), gpu()->cursorSize(), QRect(layer->position().toPoint(), gpu()->cursorSize()));
     commit->addProperty(plane->crtcId, layer->isEnabled() ? m_pending.crtc->id() : 0);
-    commit->addBuffer(plane, layer->isEnabled() ? layer->currentBuffer() : nullptr);
+    commit->addBuffer(plane, layer->isEnabled() ? layer->currentBuffer() : nullptr, nullptr);
     if (plane->vmHotspotX.isValid() && plane->vmHotspotY.isValid()) {
         commit->addProperty(plane->vmHotspotX, std::round(layer->hotspot().x()));
         commit->addProperty(plane->vmHotspotY, std::round(layer->hotspot().y()));
@@ -410,7 +409,7 @@ bool DrmPipeline::updateCursor()
     if (m_pending.crtc->cursorPlane()) {
         // test the full state, to take pending commits into account
         auto fullState = std::make_unique<DrmAtomicCommit>(QList<DrmPipeline *>{this});
-        if (prepareAtomicPresentation(fullState.get()) != Error::None) {
+        if (prepareAtomicPresentation(fullState.get(), nullptr) != Error::None) {
             return false;
         }
         prepareAtomicCursor(fullState.get());
@@ -447,19 +446,10 @@ DrmGpu *DrmPipeline::gpu() const
     return m_connector->gpu();
 }
 
-void DrmPipeline::pageFlipped(std::chrono::nanoseconds timestamp, PageflipType type, PresentationMode mode)
+void DrmPipeline::pageFlipped(std::chrono::nanoseconds timestamp)
 {
+    RenderLoopPrivate::get(m_output->renderLoop())->notifyVblank(timestamp);
     m_commitThread->pageFlipped(timestamp);
-    if (type == PageflipType::Modeset && !activePending()) {
-        return;
-    }
-    if (m_output) {
-        if (type == PageflipType::Normal || type == PageflipType::Modeset) {
-            m_output->pageFlipped(timestamp, mode);
-        } else {
-            RenderLoopPrivate::get(m_output->renderLoop())->notifyVblank(timestamp);
-        }
-    }
 }
 
 void DrmPipeline::setOutput(DrmOutput *output)

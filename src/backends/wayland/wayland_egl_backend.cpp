@@ -112,7 +112,7 @@ bool WaylandEglPrimaryLayer::endFrame(const QRegion &renderedRegion, const QRegi
     return true;
 }
 
-bool WaylandEglPrimaryLayer::scanout(SurfaceItem *surfaceItem)
+bool WaylandEglPrimaryLayer::scanout(SurfaceItem *surfaceItem, const std::shared_ptr<OutputFrame> &frame)
 {
     Q_ASSERT(!m_presentationBuffer);
     if (surfaceItem->size() != m_waylandOutput->modeSize()) {

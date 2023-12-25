@@ -25,8 +25,6 @@ public:
     DrmAbstractOutput(DrmGpu *gpu);
 
     RenderLoop *renderLoop() const override;
-    void frameFailed() const;
-    void pageFlipped(std::chrono::nanoseconds timestamp, PresentationMode mode);
     DrmGpu *gpu() const;
 
     virtual bool present(const std::shared_ptr<OutputFrame> &frame) = 0;

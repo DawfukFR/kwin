@@ -70,7 +70,7 @@ public:
      * Tries to import the newest buffer of the surface for direct scanout
      * Returns @c true if scanout succeeds, @c false if rendering is necessary
      */
-    virtual bool scanout(SurfaceItem *surfaceItem);
+    virtual bool scanout(SurfaceItem *surfaceItem, const std::shared_ptr<OutputFrame> &frame);
 
 private:
     QRegion m_repaints;

@@ -69,7 +69,7 @@ bool OutputLayer::needsRepaint() const
     return !m_repaints.isEmpty();
 }
 
-bool OutputLayer::scanout(SurfaceItem *surfaceItem)
+bool OutputLayer::scanout(SurfaceItem *surfaceItem, const std::shared_ptr<OutputFrame> &frame)
 {
     return false;
 }

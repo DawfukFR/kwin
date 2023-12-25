@@ -10,7 +10,7 @@
 #include "effect/globals.h"
 
 #include <QObject>
-
+#include <QPointer>
 #include <memory>
 
 namespace KWin
@@ -82,12 +82,13 @@ public:
     void addRenderTimeQuery(std::unique_ptr<RenderTimeQuery> &&query);
 
 private:
-    RenderLoop *const m_loop;
+    const QPointer<RenderLoop> m_loop;
     const std::chrono::nanoseconds m_refreshDuration;
     std::vector<std::unique_ptr<PresentationFeedback>> m_feedbacks;
     std::optional<ContentType> m_contentType;
     PresentationMode m_presentationMode = PresentationMode::VSync;
     std::vector<std::unique_ptr<RenderTimeQuery>> m_renderTimeQueries;
+    bool m_presented = false;
 };
 
 /**

@@ -130,17 +130,11 @@ void DrmCommitThread::submit()
                 return;
             }
         }
-        const bool cursorOnly = std::ranges::all_of(m_commits, [](const auto &commit) {
-            return commit->isCursorOnly();
-        });
         for (auto &commit : m_commits) {
             m_droppedCommits.push_back(std::move(commit));
         }
         m_commits.clear();
         qCWarning(KWIN_DRM) << "atomic commit failed:" << strerror(errno);
-        if (!cursorOnly) {
-            QMetaObject::invokeMethod(this, &DrmCommitThread::commitFailed, Qt::ConnectionType::QueuedConnection);
-        }
     }
     QMetaObject::invokeMethod(this, &DrmCommitThread::clearDroppedCommits, Qt::ConnectionType::QueuedConnection);
 }

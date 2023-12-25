@@ -36,7 +36,12 @@ OutputFrame::OutputFrame(RenderLoop *loop, std::chrono::nanoseconds refreshDurat
 {
 }
 
-OutputFrame::~OutputFrame() = default;
+OutputFrame::~OutputFrame()
+{
+    if (!m_presented && m_loop) {
+        RenderLoopPrivate::get(m_loop)->notifyFrameDropped();
+    }
+}
 
 void OutputFrame::addFeedback(std::unique_ptr<PresentationFeedback> &&feedback)
 {
@@ -49,7 +54,10 @@ void OutputFrame::presented(std::chrono::nanoseconds timestamp, PresentationMode
                           return query->queryRenderTime();
                       });
     const auto renderTime = std::accumulate(view.begin(), view.end(), std::chrono::nanoseconds::zero());
-    RenderLoopPrivate::get(m_loop)->notifyFrameCompleted(timestamp, renderTime, mode);
+    if (m_loop) {
+        RenderLoopPrivate::get(m_loop)->notifyFrameCompleted(timestamp, renderTime, mode);
+    }
+    m_presented = true;
     for (const auto &feedback : m_feedbacks) {
         feedback->presented(m_refreshDuration, timestamp, mode);
     }
@@ -57,7 +65,6 @@ void OutputFrame::presented(std::chrono::nanoseconds timestamp, PresentationMode
 
 void OutputFrame::failed()
 {
-    RenderLoopPrivate::get(m_loop)->notifyFrameFailed();
 }
 
 void OutputFrame::setContentType(ContentType type)
