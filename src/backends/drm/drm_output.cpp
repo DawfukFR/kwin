@@ -44,6 +44,7 @@ DrmOutput::DrmOutput(const std::shared_ptr<DrmConnector> &conn)
 {
     m_pipeline->setOutput(this);
     m_renderLoop->setRefreshRate(m_pipeline->mode()->refreshRate());
+    RenderLoopPrivate::get(m_renderLoop.get())->maxPendingFrameCount = 2;
 
     Capabilities capabilities = Capability::Dpms | Capability::IccProfile;
     State initialState;
