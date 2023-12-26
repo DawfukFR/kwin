@@ -8,6 +8,8 @@
 #include "renderloop_p.h"
 #include "scene/surfaceitem.h"
 
+#include <QApplication>
+#include <QThread>
 #include <drm_fourcc.h>
 #include <ranges>
 
@@ -38,6 +40,7 @@ OutputFrame::OutputFrame(RenderLoop *loop, std::chrono::nanoseconds refreshDurat
 
 OutputFrame::~OutputFrame()
 {
+    Q_ASSERT(QThread::currentThread() == QApplication::instance()->thread());
     if (!m_presented && m_loop) {
         RenderLoopPrivate::get(m_loop)->notifyFrameDropped();
     }
