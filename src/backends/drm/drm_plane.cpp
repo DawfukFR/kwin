@@ -96,7 +96,7 @@ bool DrmPlane::updateProperties()
     colorRange.update(props);
     vmHotspotX.update(props);
     vmHotspotY.update(props);
-    inFenceFd.update(props);
+    // inFenceFd.update(props);
 
     if (!type.isValid() || !srcX.isValid() || !srcY.isValid() || !srcW.isValid() || !srcH.isValid()
         || !crtcX.isValid() || !crtcY.isValid() || !crtcW.isValid() || !crtcH.isValid() || !fbId.isValid()) {

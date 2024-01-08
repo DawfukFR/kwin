@@ -44,6 +44,7 @@ DrmAtomicCommit::DrmAtomicCommit(const QList<DrmPipeline *> &pipelines)
 
 void DrmAtomicCommit::addProperty(const DrmProperty &prop, uint64_t value)
 {
+    props.push_back(&prop);
     m_properties[prop.drmObject()->id()][prop.propId()] = value;
 }
 
@@ -109,6 +110,8 @@ bool DrmAtomicCommit::doCommit(uint32_t flags, DrmAtomicCommit *currentState)
     std::vector<uint64_t> values;
     objects.reserve(m_properties.size());
     propertyCounts.reserve(m_properties.size());
+    int removed = 0;
+    int added = 0;
     for (const auto &[object, properties] : m_properties) {
         size_t i = 0;
         for (const auto &[property, value] : properties) {
@@ -122,6 +125,13 @@ bool DrmAtomicCommit::doCommit(uint32_t flags, DrmAtomicCommit *currentState)
                     if (propIt != objIt->second.end()) {
                         const uint64_t previousValue = propIt->second;
                         if (previousValue == value) {
+                            removed++;
+                            const auto it = std::find_if(props.begin(), props.end(), [property](const DrmProperty *prop) {
+                                return prop->propId() == property;
+                            });
+                            if (it != props.end()) {
+                                qWarning() << "removing prop" << (*it)->name() << "->" << value;
+                            }
                             continue;
                         }
                     }
@@ -130,6 +140,15 @@ bool DrmAtomicCommit::doCommit(uint32_t flags, DrmAtomicCommit *currentState)
             propertyIds.push_back(property);
             values.push_back(value);
             i++;
+            if (m_tearing) {
+                const auto it = std::find_if(props.begin(), props.end(), [property](const DrmProperty *prop) {
+                    return prop->propId() == property;
+                });
+                if (it != props.end()) {
+                    qWarning() << "adding prop" << (*it)->name() << "->" << value;
+                }
+            }
+            added++;
         }
         if (i > 0) {
             objects.push_back(object);
@@ -146,7 +165,11 @@ bool DrmAtomicCommit::doCommit(uint32_t flags, DrmAtomicCommit *currentState)
         .reserved = 0,
         .user_data = reinterpret_cast<uint64_t>(this),
     };
-    return drmIoctl(m_gpu->fd(), DRM_IOCTL_MODE_ATOMIC, &commitData) == 0;
+    bool ret = drmIoctl(m_gpu->fd(), DRM_IOCTL_MODE_ATOMIC, &commitData) == 0;
+    if (m_tearing) {
+        qWarning() << "removed:" << removed << "added:" << added;
+    }
+    return ret;
 }
 
 void DrmAtomicCommit::pageFlipped(std::chrono::nanoseconds timestamp) const

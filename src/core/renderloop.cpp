@@ -220,6 +220,9 @@ void RenderLoop::setFullscreenSurface(Item *surfaceItem)
 
 void RenderLoop::setPresentationMode(PresentationMode mode)
 {
+    if (d->presentationMode != mode) {
+        qWarning() << "presentation mode switched to" << mode;
+    }
     d->presentationMode = mode;
 }
 

@@ -80,7 +80,7 @@ DrmPipeline::Error DrmPipeline::present()
     if (gpu()->atomicModeSetting()) {
         // test the full state, to take pending commits into account
         auto fullState = std::make_unique<DrmAtomicCommit>(QList<DrmPipeline *>{this});
-        if (Error err = prepareAtomicCommit(fullState.get(), CommitMode::Test); err != Error::None) {
+        if (Error err = prepareAtomicPresentation(fullState.get()); err != Error::None) {
             return err;
         }
         if (!fullState->test(m_commitThread->lastFlippedCommit())) {
