@@ -17,6 +17,8 @@
 
 #include <QPointer>
 
+#include <wayland-util.h>
+
 #include <memory>
 
 namespace KWin
@@ -89,6 +91,15 @@ QPoint XdgToplevelDragV1Interface::offset() const
     return d->pos;
 }
 
+static const wl_interface qt_toplevel_drag_manager_interface{
+    .name = "qt_toplevel_drag_manager_v1",
+    .version = 1,
+    .method_count = xdg_toplevel_drag_manager_v1_interface.method_count,
+    .methods = xdg_toplevel_drag_manager_v1_interface.methods,
+    .event_count = 0,
+    .events = nullptr,
+};
+
 class XdgToplevelDragManagerV1InterfacePrivate : public QtWaylandServer::xdg_toplevel_drag_manager_v1
 {
 public:
@@ -96,6 +107,10 @@ public:
         : xdg_toplevel_drag_manager_v1(*display, version)
         , q(q)
     {
+        auto bind = [](struct ::wl_client *client, void *data, uint32_t version, uint32_t id) {
+            static_cast<XdgToplevelDragManagerV1InterfacePrivate *>(data)->add(client, id, version);
+        };
+        wl_global_create(*display, &qt_toplevel_drag_manager_interface, 1, this, bind);
     }
 
 protected:
@@ -116,7 +131,9 @@ protected:
         new XdgToplevelDragV1Interface(xdg_toplevel_drag, dataSource);
     }
 
+private:
     XdgToplevelDragManagerV1Interface *q;
+    std::unique_ptr<wl_global, std::integral_constant<decltype(&wl_global_remove), wl_global_remove>> qt_toplevel_drag_manager;
 };
 
 XdgToplevelDragManagerV1Interface::XdgToplevelDragManagerV1Interface(Display *display, QObject *parent)
