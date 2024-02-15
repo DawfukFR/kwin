@@ -24,7 +24,7 @@
 
 namespace KWin
 {
-static const quint32 s_version = 16;
+static const quint32 s_version = 17;
 static const quint32 s_activationVersion = 1;
 
 class PlasmaWindowManagementInterfacePrivate : public QtWaylandServer::org_kde_plasma_window_management
@@ -37,6 +37,8 @@ public:
     void sendStackingOrderChanged(wl_resource *resource);
     void sendStackingOrderUuidsChanged();
     void sendStackingOrderUuidsChanged(wl_resource *resource);
+    void sendStackingOrderChanged2();
+    void sendStackingOrderChanged2(Resource *resource);
 
     PlasmaWindowManagementInterface::ShowingDesktopState state = PlasmaWindowManagementInterface::ShowingDesktopState::Disabled;
     QList<PlasmaWindowInterface *> windows;
@@ -161,7 +163,8 @@ void PlasmaWindowManagementInterfacePrivate::sendStackingOrderChanged()
 
 void PlasmaWindowManagementInterfacePrivate::sendStackingOrderChanged(wl_resource *r)
 {
-    if (wl_resource_get_version(r) < ORG_KDE_PLASMA_WINDOW_MANAGEMENT_STACKING_ORDER_CHANGED_SINCE_VERSION) {
+    if (wl_resource_get_version(r) < ORG_KDE_PLASMA_WINDOW_MANAGEMENT_STACKING_ORDER_CHANGED_SINCE_VERSION
+        || wl_resource_get_version(r) >= ORG_KDE_PLASMA_WINDOW_MANAGEMENT_STACKING_ORDER_CHANGED_2_SINCE_VERSION) {
         return;
     }
 
@@ -178,7 +181,8 @@ void PlasmaWindowManagementInterfacePrivate::sendStackingOrderUuidsChanged()
 
 void PlasmaWindowManagementInterfacePrivate::sendStackingOrderUuidsChanged(wl_resource *r)
 {
-    if (wl_resource_get_version(r) < ORG_KDE_PLASMA_WINDOW_MANAGEMENT_STACKING_ORDER_UUID_CHANGED_SINCE_VERSION) {
+    if (wl_resource_get_version(r) < ORG_KDE_PLASMA_WINDOW_MANAGEMENT_STACKING_ORDER_UUID_CHANGED_SINCE_VERSION
+        || wl_resource_get_version(r) >= ORG_KDE_PLASMA_WINDOW_MANAGEMENT_STACKING_ORDER_CHANGED_2_SINCE_VERSION) {
         return;
     }
 
@@ -194,6 +198,28 @@ void PlasmaWindowManagementInterfacePrivate::sendStackingOrderUuidsChanged(wl_re
     send_stacking_order_uuid_changed(r, uuids);
 }
 
+void PlasmaWindowManagementInterfacePrivate::sendStackingOrderChanged2()
+{
+    const auto clientResources = resourceMap();
+    for (auto resource : clientResources) {
+        sendStackingOrderChanged2(resource);
+    }
+}
+
+void PlasmaWindowManagementInterfacePrivate::sendStackingOrderChanged2(Resource *resource)
+{
+    if (resource->version() < ORG_KDE_PLASMA_WINDOW_MANAGEMENT_STACKING_ORDER_CHANGED_2_SINCE_VERSION) {
+        return;
+    }
+    wl_resource *stackingOrder = wl_resource_create(resource->client(), &org_kde_plasma_stacking_order_interface, resource->version(), 0);
+    org_kde_plasma_window_management_send_stacking_order_changed_2(resource->handle, stackingOrder);
+    for (const auto &uuid : std::as_const(stackingOrderUuids)) {
+        org_kde_plasma_stacking_order_send_window(stackingOrder, uuid.toUtf8().constData());
+    }
+    org_kde_plasma_stacking_order_send_done(stackingOrder);
+    wl_resource_destroy(stackingOrder);
+}
+
 void PlasmaWindowManagementInterfacePrivate::org_kde_plasma_window_management_bind_resource(Resource *resource)
 {
     for (const auto window : std::as_const(windows)) {
@@ -205,6 +231,7 @@ void PlasmaWindowManagementInterfacePrivate::org_kde_plasma_window_management_bi
     }
     sendStackingOrderChanged(resource->handle);
     sendStackingOrderUuidsChanged(resource->handle);
+    sendStackingOrderChanged2(resource);
 }
 
 void PlasmaWindowManagementInterfacePrivate::org_kde_plasma_window_management_show_desktop(Resource *resource, uint32_t state)
@@ -317,6 +344,7 @@ void PlasmaWindowManagementInterface::setStackingOrderUuids(const QList<QString>
     }
     d->stackingOrderUuids = stackingOrderUuids;
     d->sendStackingOrderUuidsChanged();
+    d->sendStackingOrderChanged2();
 }
 
 void PlasmaWindowManagementInterface::setPlasmaVirtualDesktopManagementInterface(PlasmaVirtualDesktopManagementInterface *manager)
