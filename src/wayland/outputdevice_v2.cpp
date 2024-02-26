@@ -22,7 +22,7 @@
 namespace KWin
 {
 
-static const quint32 s_version = 6;
+static const quint32 s_version = 7;
 
 static QtWaylandServer::kde_output_device_v2::transform kwinTransformToOutputDeviceTransform(OutputTransform transform)
 {
@@ -105,6 +105,7 @@ public:
     void sendBrightnessMetadata(Resource *resource);
     void sendBrightnessOverrides(Resource *resource);
     void sendSdrGamutWideness(Resource *resource);
+    void sendEdidColorProfile(Resource *resource);
 
     OutputDeviceV2Interface *q;
     QPointer<Display> m_display;
@@ -140,6 +141,7 @@ public:
     std::optional<double> m_maxPeakBrightnessOverride;
     std::optional<double> m_maxAverageBrightnessOverride;
     std::optional<double> m_minBrightnessOverride;
+    bool m_edidColorProfile = false;
 
 protected:
     void kde_output_device_v2_bind_resource(Resource *resource) override;
@@ -225,6 +227,7 @@ OutputDeviceV2Interface::OutputDeviceV2Interface(Display *display, Output *handl
     updateBrightnessMetadata();
     updateBrightnessOverrides();
     updateSdrGamutWideness();
+    updateEdidColorProfile();
 
     connect(handle, &Output::geometryChanged,
             this, &OutputDeviceV2Interface::updateGlobalPosition);
@@ -254,6 +257,7 @@ OutputDeviceV2Interface::OutputDeviceV2Interface(Display *display, Output *handl
     connect(handle, &Output::brightnessMetadataChanged, this, &OutputDeviceV2Interface::updateBrightnessMetadata);
     connect(handle, &Output::brightnessMetadataChanged, this, &OutputDeviceV2Interface::updateBrightnessOverrides);
     connect(handle, &Output::sdrGamutWidenessChanged, this, &OutputDeviceV2Interface::updateSdrGamutWideness);
+    connect(handle, &Output::edidColorProfileChanged, this, &OutputDeviceV2Interface::updateEdidColorProfile);
 }
 
 OutputDeviceV2Interface::~OutputDeviceV2Interface()
@@ -312,6 +316,7 @@ void OutputDeviceV2InterfacePrivate::kde_output_device_v2_bind_resource(Resource
     sendBrightnessMetadata(resource);
     sendBrightnessOverrides(resource);
     sendSdrGamutWideness(resource);
+    sendEdidColorProfile(resource);
     sendDone(resource);
 }
 
@@ -462,6 +467,13 @@ void OutputDeviceV2InterfacePrivate::sendSdrGamutWideness(Resource *resource)
 {
     if (resource->version() >= KDE_OUTPUT_DEVICE_V2_SDR_GAMUT_WIDENESS_SINCE_VERSION) {
         send_sdr_gamut_wideness(resource->handle, std::clamp<uint32_t>(m_sdrGamutWideness * 10'000, 0, 10'000));
+    }
+}
+
+void OutputDeviceV2InterfacePrivate::sendEdidColorProfile(Resource *resource)
+{
+    if (resource->version() >= KDE_OUTPUT_DEVICE_V2_EDID_COLOR_PROFILE_SINCE_VERSION) {
+        send_edid_color_profile(resource->handle, m_edidColorProfile);
     }
 }
 
@@ -781,6 +793,19 @@ void OutputDeviceV2Interface::updateSdrGamutWideness()
         const auto clientResources = d->resourceMap();
         for (const auto &resource : clientResources) {
             d->sendSdrGamutWideness(resource);
+            d->sendDone(resource);
+        }
+    }
+}
+
+void OutputDeviceV2Interface::updateEdidColorProfile()
+{
+    if (d->m_edidColorProfile != d->m_handle->edidColorProfile()) {
+        d->m_edidColorProfile = d->m_handle->edidColorProfile();
+        qWarning() << "update:" << d->m_edidColorProfile;
+        const auto clientResources = d->resourceMap();
+        for (const auto &resource : clientResources) {
+            d->sendEdidColorProfile(resource);
             d->sendDone(resource);
         }
     }

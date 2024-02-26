@@ -338,7 +338,7 @@ bool DrmOutput::queueChanges(const std::shared_ptr<OutputChangeSet> &props)
     } else {
         m_pipeline->setIccProfile(props->iccProfile.value_or(m_state.iccProfile));
     }
-    if (bt2020 || hdr || m_pipeline->iccProfile()) {
+    if (bt2020 || hdr || m_pipeline->iccProfile() || props->edidColorProfile.value_or(m_state.edidColorProfile)) {
         // remove unused gamma ramp and ctm, if present
         m_pipeline->setGammaRamp(nullptr);
         m_pipeline->setCTM(QMatrix3x3{});
@@ -362,6 +362,9 @@ ColorDescription DrmOutput::createColorDescription(const std::shared_ptr<OutputC
     } else if (const auto profile = props->iccProfile.value_or(m_state.iccProfile)) {
         const double brightness = profile->brightness().value_or(200);
         return ColorDescription(profile->colorimetry(), NamedTransferFunction::gamma22, brightness, 0, brightness, brightness);
+    } else if (props->edidColorProfile.value_or(edidColorProfile()) && m_connector->edid()->isValid() && m_connector->edid()->colorimetry()) {
+        // TODO the edid can contain gamma values as well, use that
+        return ColorDescription(*m_connector->edid()->colorimetry(), NamedTransferFunction::gamma22, 200, 0, 200, 200);
     } else {
         return ColorDescription::sRGB;
     }
@@ -396,6 +399,7 @@ void DrmOutput::applyQueuedChanges(const std::shared_ptr<OutputChangeSet> &props
     next.iccProfile = props->iccProfile.value_or(m_state.iccProfile);
     next.colorDescription = m_pipeline->colorDescription();
     next.vrrPolicy = props->vrrPolicy.value_or(m_state.vrrPolicy);
+    next.edidColorProfile = props->edidColorProfile.value_or(m_state.edidColorProfile);
     setState(next);
 
     if (!isEnabled() && m_pipeline->needsModeset()) {
@@ -487,7 +491,7 @@ QVector3D DrmOutput::channelFactors() const
 bool DrmOutput::needsColormanagement() const
 {
     static bool forceColorManagement = qEnvironmentVariableIntValue("KWIN_DRM_FORCE_COLOR_MANAGEMENT") != 0;
-    return forceColorManagement || m_state.wideColorGamut || m_state.highDynamicRange || m_state.iccProfile || m_channelFactorsNeedShaderFallback;
+    return forceColorManagement || m_state.wideColorGamut || m_state.highDynamicRange || m_state.iccProfile || m_state.edidColorProfile || m_channelFactorsNeedShaderFallback;
 }
 }
 

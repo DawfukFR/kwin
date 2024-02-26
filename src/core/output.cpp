@@ -622,6 +622,9 @@ void Output::setState(const State &state)
     if (oldState.colorDescription != state.colorDescription) {
         Q_EMIT colorDescriptionChanged();
     }
+    if (oldState.edidColorProfile != state.edidColorProfile) {
+        Q_EMIT edidColorProfileChanged();
+    }
     if (oldState.enabled != state.enabled) {
         Q_EMIT enabledChanged();
     }
@@ -767,6 +770,11 @@ std::optional<double> Output::minBrightnessOverride() const
 double Output::sdrGamutWideness() const
 {
     return m_state.sdrGamutWideness;
+}
+
+bool Output::edidColorProfile() const
+{
+    return m_state.edidColorProfile;
 }
 } // namespace KWin
 

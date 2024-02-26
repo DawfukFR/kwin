@@ -230,6 +230,7 @@ void OutputConfigurationStore::storeConfig(const QList<Output *> &allOutputs, bo
                 .wideColorGamut = changeSet->wideColorGamut.value_or(output->wideColorGamut()),
                 .autoRotation = changeSet->autoRotationPolicy.value_or(output->autoRotationPolicy()),
                 .iccProfilePath = changeSet->iccProfilePath.value_or(output->iccProfilePath()),
+                .edidColorProfile = changeSet->edidColorProfile.value_or(output->edidColorProfile()),
                 .maxPeakBrightnessOverride = changeSet->maxPeakBrightnessOverride.value_or(output->maxPeakBrightnessOverride()),
                 .maxAverageBrightnessOverride = changeSet->maxAverageBrightnessOverride.value_or(output->maxAverageBrightnessOverride()),
                 .minBrightnessOverride = changeSet->minBrightnessOverride.value_or(output->minBrightnessOverride()),
@@ -263,6 +264,7 @@ void OutputConfigurationStore::storeConfig(const QList<Output *> &allOutputs, bo
                 .wideColorGamut = output->wideColorGamut(),
                 .autoRotation = output->autoRotationPolicy(),
                 .iccProfilePath = output->iccProfilePath(),
+                .edidColorProfile = output->edidColorProfile(),
                 .maxPeakBrightnessOverride = output->maxPeakBrightnessOverride(),
                 .maxAverageBrightnessOverride = output->maxAverageBrightnessOverride(),
                 .minBrightnessOverride = output->minBrightnessOverride(),
@@ -314,6 +316,7 @@ std::pair<OutputConfiguration, QList<Output *>> OutputConfigurationStore::setupT
             .maxAverageBrightnessOverride = state.maxAverageBrightnessOverride,
             .minBrightnessOverride = state.minBrightnessOverride,
             .sdrGamutWideness = state.sdrGamutWideness,
+            .edidColorProfile = state.edidColorProfile,
         };
         if (setupState.enabled) {
             priorities.push_back(std::make_pair(output, setupState.priority));
@@ -428,6 +431,7 @@ std::pair<OutputConfiguration, QList<Output *>> OutputConfigurationStore::genera
             .sdrBrightness = existingData.sdrBrightness.value_or(200),
             .wideColorGamut = existingData.wideColorGamut.value_or(false),
             .autoRotationPolicy = existingData.autoRotation.value_or(Output::AutoRotationPolicy::InTabletMode),
+            .edidColorProfile = existingData.edidColorProfile.value_or(false),
         };
         if (enable) {
             const auto modeSize = changeset->transform->map(mode->size());
@@ -707,6 +711,9 @@ void OutputConfigurationStore::load()
         if (const auto it = data.find("sdrGamutWideness"); it != data.end() && it->isDouble()) {
             state.sdrGamutWideness = it->toDouble();
         }
+        if (const auto it = data.find("edidColorProfile"); it != data.end() && it->isBool()) {
+            state.edidColorProfile = it->toBool();
+        }
         outputDatas.push_back(state);
     }
 
@@ -922,6 +929,9 @@ void OutputConfigurationStore::save()
         }
         if (output.sdrGamutWideness) {
             o["sdrGamutWideness"] = *output.sdrGamutWideness;
+        }
+        if (output.edidColorProfile) {
+            o["edidColorProfile"] = *output.edidColorProfile;
         }
         outputsData.append(o);
     }
