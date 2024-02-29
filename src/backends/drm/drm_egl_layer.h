@@ -29,7 +29,7 @@ public:
     EglGbmLayer(EglGbmBackend *eglBackend, DrmPipeline *pipeline);
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
     bool scanout(SurfaceItem *surfaceItem) override;
     bool checkTestBuffer() override;
     std::shared_ptr<DrmFramebuffer> currentBuffer() const override;
@@ -37,7 +37,6 @@ public:
     std::shared_ptr<GLTexture> texture() const override;
     ColorDescription colorDescription() const;
     void releaseBuffers() override;
-    std::chrono::nanoseconds queryRenderTime() const override;
 
 private:
     std::shared_ptr<DrmFramebuffer> m_scanoutBuffer;

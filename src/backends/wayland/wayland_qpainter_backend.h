@@ -38,8 +38,7 @@ public:
     ~WaylandQPainterPrimaryLayer() override;
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
     void present();
 
@@ -52,8 +51,7 @@ private:
 
     std::unique_ptr<QPainterSwapchain> m_swapchain;
     std::shared_ptr<QPainterSwapchainSlot> m_back;
-    std::chrono::steady_clock::time_point m_renderStart;
-    std::chrono::nanoseconds m_renderTime;
+    std::unique_ptr<CpuRenderTimeQuery> m_renderTime;
 
     friend class WaylandQPainterBackend;
 };
@@ -67,16 +65,14 @@ public:
     ~WaylandQPainterCursorLayer() override;
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
 private:
     WaylandOutput *m_output;
     WaylandQPainterBackend *m_backend;
     std::unique_ptr<QPainterSwapchain> m_swapchain;
     std::shared_ptr<QPainterSwapchainSlot> m_back;
-    std::chrono::steady_clock::time_point m_renderStart;
-    std::chrono::nanoseconds m_renderTime;
+    std::unique_ptr<CpuRenderTimeQuery> m_renderTime;
 };
 
 class WaylandQPainterBackend : public QPainterBackend

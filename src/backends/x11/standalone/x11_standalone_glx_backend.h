@@ -64,8 +64,7 @@ public:
     GlxLayer(GlxBackend *backend);
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
 private:
     GlxBackend *const m_backend;
@@ -83,7 +82,7 @@ public:
     ~GlxBackend() override;
     std::unique_ptr<SurfaceTexture> createSurfaceTextureX11(SurfacePixmapX11 *pixmap) override;
     OutputLayerBeginFrameInfo beginFrame();
-    void endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion);
+    void endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame);
     std::chrono::nanoseconds queryRenderTime();
     void present(Output *output, const std::shared_ptr<OutputFrame> &frame) override;
     bool makeCurrent() override;
@@ -120,7 +119,7 @@ private:
     ::Window window;
     GLXFBConfig fbconfig;
     GLXWindow glxWindow;
-    std::unique_ptr<GlxContext> m_context;
+    std::shared_ptr<GlxContext> m_context;
     QHash<xcb_visualid_t, FBConfigInfo> m_fbconfigHash;
     QHash<xcb_visualid_t, int> m_visualDepthHash;
     std::unique_ptr<SwapEventFilter> m_swapEventFilter;

@@ -9,9 +9,26 @@
 #include "scene/surfaceitem.h"
 
 #include <drm_fourcc.h>
+#include <ranges>
 
 namespace KWin
 {
+
+CpuRenderTimeQuery::CpuRenderTimeQuery()
+    : m_start(std::chrono::steady_clock::now())
+{
+}
+
+void CpuRenderTimeQuery::end()
+{
+    m_end = std::chrono::steady_clock::now();
+}
+
+std::chrono::nanoseconds CpuRenderTimeQuery::queryRenderTime()
+{
+    Q_ASSERT(m_end);
+    return *m_end - m_start;
+}
 
 OutputFrame::OutputFrame(RenderLoop *loop)
     : m_loop(loop)
@@ -25,8 +42,12 @@ void OutputFrame::addFeedback(std::unique_ptr<PresentationFeedback> &&feedback)
     m_feedbacks.push_back(std::move(feedback));
 }
 
-void OutputFrame::presented(std::chrono::nanoseconds refreshDuration, std::chrono::nanoseconds timestamp, std::chrono::nanoseconds renderTime, PresentationMode mode)
+void OutputFrame::presented(std::chrono::nanoseconds refreshDuration, std::chrono::nanoseconds timestamp, PresentationMode mode)
 {
+    const auto view = m_renderTimeQueries | std::views::transform([](const auto &query) {
+                          return query->queryRenderTime();
+                      });
+    const auto renderTime = std::accumulate(view.begin(), view.end(), std::chrono::nanoseconds::zero());
     RenderLoopPrivate::get(m_loop)->notifyFrameCompleted(timestamp, renderTime, mode);
     for (const auto &feedback : m_feedbacks) {
         feedback->presented(refreshDuration, timestamp, mode);
@@ -56,6 +77,11 @@ void OutputFrame::setPresentationMode(PresentationMode mode)
 PresentationMode OutputFrame::presentationMode() const
 {
     return m_presentationMode;
+}
+
+void OutputFrame::addRenderTimeQuery(std::unique_ptr<RenderTimeQuery> &&query)
+{
+    m_renderTimeQueries.push_back(std::move(query));
 }
 
 RenderBackend::RenderBackend(QObject *parent)

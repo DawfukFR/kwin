@@ -54,9 +54,9 @@ std::optional<OutputLayerBeginFrameInfo> EglGbmCursorLayer::beginFrame()
     return m_surface.startRendering(m_pipeline->gpu()->cursorSize(), drmToOutputTransform(m_pipeline).combine(OutputTransform::FlipY), m_pipeline->cursorFormats(), m_pipeline->colorDescription(), m_pipeline->output()->channelFactors(), m_pipeline->iccProfile(), m_pipeline->output()->needsColormanagement());
 }
 
-bool EglGbmCursorLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion)
+bool EglGbmCursorLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame)
 {
-    return m_surface.endRendering(damagedRegion);
+    return m_surface.endRendering(damagedRegion, frame);
 }
 
 QRegion EglGbmCursorLayer::currentDamage() const
@@ -77,11 +77,6 @@ bool EglGbmCursorLayer::checkTestBuffer()
 void EglGbmCursorLayer::releaseBuffers()
 {
     m_surface.destroyResources();
-}
-
-std::chrono::nanoseconds EglGbmCursorLayer::queryRenderTime() const
-{
-    return m_surface.queryRenderTime();
 }
 
 std::optional<QSize> EglGbmCursorLayer::fixedSize() const

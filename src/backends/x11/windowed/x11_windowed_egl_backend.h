@@ -30,8 +30,7 @@ public:
     ~X11WindowedEglPrimaryLayer() override;
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
     std::shared_ptr<GLTexture> texture() const;
     void present();
@@ -53,8 +52,7 @@ public:
     ~X11WindowedEglCursorLayer() override;
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
 private:
     X11WindowedOutput *const m_output;

@@ -62,9 +62,9 @@ std::optional<OutputLayerBeginFrameInfo> EglGbmLayer::beginFrame()
     return m_surface.startRendering(m_pipeline->mode()->size(), drmToOutputTransform(m_pipeline).combine(OutputTransform::FlipY), m_pipeline->formats(), m_pipeline->colorDescription(), m_pipeline->output()->channelFactors(), m_pipeline->iccProfile(), m_pipeline->output()->needsColormanagement());
 }
 
-bool EglGbmLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion)
+bool EglGbmLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame)
 {
-    const bool ret = m_surface.endRendering(damagedRegion);
+    const bool ret = m_surface.endRendering(damagedRegion, frame);
     if (ret) {
         m_currentDamage = damagedRegion;
     }
@@ -164,10 +164,5 @@ void EglGbmLayer::releaseBuffers()
 {
     m_scanoutBuffer.reset();
     m_surface.destroyResources();
-}
-
-std::chrono::nanoseconds EglGbmLayer::queryRenderTime() const
-{
-    return m_surface.queryRenderTime();
 }
 }

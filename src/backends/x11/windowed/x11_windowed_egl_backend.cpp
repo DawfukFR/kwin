@@ -57,9 +57,7 @@ std::optional<OutputLayerBeginFrameInfo> X11WindowedEglPrimaryLayer::beginFrame(
     QRegion repaint = m_output->exposedArea() + m_output->rect();
     m_output->clearExposedArea();
 
-    if (!m_query) {
-        m_query = std::make_unique<GLRenderTimeQuery>();
-    }
+    m_query = std::make_unique<GLRenderTimeQuery>(m_backend->openglContextRef());
     m_query->begin();
     return OutputLayerBeginFrameInfo{
         .renderTarget = RenderTarget(m_buffer->framebuffer()),
@@ -67,9 +65,12 @@ std::optional<OutputLayerBeginFrameInfo> X11WindowedEglPrimaryLayer::beginFrame(
     };
 }
 
-bool X11WindowedEglPrimaryLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion)
+bool X11WindowedEglPrimaryLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame)
 {
     m_query->end();
+    if (frame) {
+        frame->addRenderTimeQuery(std::move(m_query));
+    }
     return true;
 }
 
@@ -112,12 +113,6 @@ std::shared_ptr<GLTexture> X11WindowedEglPrimaryLayer::texture() const
     return m_buffer->texture();
 }
 
-std::chrono::nanoseconds X11WindowedEglPrimaryLayer::queryRenderTime() const
-{
-    m_backend->makeCurrent();
-    return m_query->result();
-}
-
 X11WindowedEglCursorLayer::X11WindowedEglCursorLayer(X11WindowedEglBackend *backend, X11WindowedOutput *output)
     : m_output(output)
     , m_backend(backend)
@@ -147,7 +142,7 @@ std::optional<OutputLayerBeginFrameInfo> X11WindowedEglCursorLayer::beginFrame()
         m_framebuffer = std::make_unique<GLFramebuffer>(m_texture.get());
     }
     if (!m_query) {
-        m_query = std::make_unique<GLRenderTimeQuery>();
+        m_query = std::make_unique<GLRenderTimeQuery>(m_backend->openglContextRef());
     }
     m_query->begin();
     return OutputLayerBeginFrameInfo{
@@ -156,7 +151,7 @@ std::optional<OutputLayerBeginFrameInfo> X11WindowedEglCursorLayer::beginFrame()
     };
 }
 
-bool X11WindowedEglCursorLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion)
+bool X11WindowedEglCursorLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame)
 {
     QImage buffer(m_framebuffer->size(), QImage::Format_RGBA8888_Premultiplied);
 
@@ -166,14 +161,11 @@ bool X11WindowedEglCursorLayer::endFrame(const QRegion &renderedRegion, const QR
 
     m_output->cursor()->update(buffer.mirrored(false, true), hotspot());
     m_query->end();
+    if (frame) {
+        frame->addRenderTimeQuery(std::move(m_query));
+    }
 
     return true;
-}
-
-std::chrono::nanoseconds X11WindowedEglCursorLayer::queryRenderTime() const
-{
-    m_backend->makeCurrent();
-    return m_query->result();
 }
 
 X11WindowedEglBackend::X11WindowedEglBackend(X11WindowedBackend *backend)

@@ -32,8 +32,7 @@ public:
     EglLayer(EglBackend *backend);
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
 private:
     EglBackend *const m_backend;
@@ -51,11 +50,10 @@ public:
 
     std::unique_ptr<SurfaceTexture> createSurfaceTextureX11(SurfacePixmapX11 *texture) override;
     OutputLayerBeginFrameInfo beginFrame();
-    void endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion);
+    void endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame);
     void present(Output *output, const std::shared_ptr<OutputFrame> &frame) override;
     OverlayWindow *overlayWindow() const override;
     OutputLayer *primaryLayer(Output *output) override;
-    std::chrono::nanoseconds queryRenderTime();
 
 protected:
     EGLConfig chooseBufferConfig();

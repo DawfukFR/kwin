@@ -71,9 +71,7 @@ std::optional<OutputLayerBeginFrameInfo> VirtualEglGbmLayer::beginFrame()
         m_scanoutBuffer = nullptr;
     }
 
-    if (!m_query) {
-        m_query = std::make_unique<GLRenderTimeQuery>();
-    }
+    m_query = std::make_unique<GLRenderTimeQuery>(m_eglBackend->openglContextRef());
     m_query->begin();
 
     const QRegion repair = m_damageJournal.accumulate(slot->age(), infiniteRegion());
@@ -83,9 +81,12 @@ std::optional<OutputLayerBeginFrameInfo> VirtualEglGbmLayer::beginFrame()
     };
 }
 
-bool VirtualEglGbmLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion)
+bool VirtualEglGbmLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame)
 {
     m_query->end();
+    if (frame) {
+        frame->addRenderTimeQuery(std::move(m_query));
+    }
     glFlush();
     m_currentDamage = damagedRegion;
     m_damageJournal.add(damagedRegion);
@@ -182,11 +183,5 @@ void VirtualEglGbmLayer::releaseBuffers()
         m_scanoutBuffer->unref();
         m_scanoutBuffer = nullptr;
     }
-}
-
-std::chrono::nanoseconds VirtualEglGbmLayer::queryRenderTime() const
-{
-    m_eglBackend->makeCurrent();
-    return m_query->result();
 }
 }

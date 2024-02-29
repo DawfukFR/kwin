@@ -18,6 +18,7 @@ namespace KWin
 {
 
 class SurfaceItem;
+class OutputFrame;
 
 struct OutputLayerBeginFrameInfo
 {
@@ -63,18 +64,13 @@ public:
     bool isEnabled() const;
 
     virtual std::optional<OutputLayerBeginFrameInfo> beginFrame() = 0;
-    virtual bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) = 0;
+    virtual bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) = 0;
 
     /**
      * Tries to import the newest buffer of the surface for direct scanout
      * Returns @c true if scanout succeeds, @c false if rendering is necessary
      */
     virtual bool scanout(SurfaceItem *surfaceItem);
-
-    /**
-     * queries the render time of the last frame. If rendering isn't complete yet, this may block until it is
-     */
-    virtual std::chrono::nanoseconds queryRenderTime() const = 0;
 
 private:
     QRegion m_repaints;

@@ -42,8 +42,7 @@ public:
     void present();
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
     bool scanout(SurfaceItem *surfaceItem) override;
 
 private:
@@ -67,8 +66,7 @@ public:
     ~WaylandEglCursorLayer() override;
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
-    std::chrono::nanoseconds queryRenderTime() const override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
 private:
     WaylandOutput *m_output;

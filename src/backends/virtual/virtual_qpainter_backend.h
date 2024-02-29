@@ -9,6 +9,7 @@
 #pragma once
 
 #include "core/outputlayer.h"
+#include "core/renderbackend.h"
 #include "platformsupport/scenes/qpainter/qpainterbackend.h"
 
 #include <QList>
@@ -33,17 +34,15 @@ public:
     ~VirtualQPainterLayer() override;
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
     QImage *image();
-    std::chrono::nanoseconds queryRenderTime() const override;
 
 private:
     Output *const m_output;
     VirtualQPainterBackend *const m_backend;
     std::unique_ptr<QPainterSwapchain> m_swapchain;
     std::shared_ptr<QPainterSwapchainSlot> m_current;
-    std::chrono::steady_clock::time_point m_renderStart;
-    std::chrono::nanoseconds m_renderTime = std::chrono::nanoseconds::zero();
+    std::unique_ptr<CpuRenderTimeQuery> m_renderTime;
 };
 
 class VirtualQPainterBackend : public QPainterBackend
