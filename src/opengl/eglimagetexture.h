@@ -22,13 +22,13 @@ class EglDisplay;
 class KWIN_EXPORT EGLImageTexture : public GLTexture
 {
 public:
-    explicit EGLImageTexture(EglDisplay *display, EGLImageKHR image, uint textureId, int internalFormat, const QSize &size, uint32_t target);
+    explicit EGLImageTexture(const std::shared_ptr<EglDisplay> &display, EGLImageKHR image, uint textureId, int internalFormat, const QSize &size, uint32_t target);
     ~EGLImageTexture() override;
 
-    static std::shared_ptr<EGLImageTexture> create(EglDisplay *display, EGLImageKHR image, int internalFormat, const QSize &size, bool externalOnly);
+    static std::shared_ptr<EGLImageTexture> create(const std::shared_ptr<EglDisplay> &display, EGLImageKHR image, int internalFormat, const QSize &size, bool externalOnly);
 
     EGLImageKHR m_image;
-    EglDisplay *const m_display;
+    const std::shared_ptr<EglDisplay> m_display;
 };
 
 }

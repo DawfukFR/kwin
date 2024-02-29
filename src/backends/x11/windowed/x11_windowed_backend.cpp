@@ -798,14 +798,14 @@ void X11WindowedBackend::destroyOutputs()
     }
 }
 
-void X11WindowedBackend::setEglDisplay(std::unique_ptr<EglDisplay> &&display)
+void X11WindowedBackend::setEglDisplay(const std::shared_ptr<EglDisplay> &display)
 {
-    m_eglDisplay = std::move(display);
+    m_eglDisplay = display;
 }
 
-EglDisplay *X11WindowedBackend::sceneEglDisplayObject() const
+std::shared_ptr<EglDisplay> X11WindowedBackend::sceneEglDisplayObject() const
 {
-    return m_eglDisplay.get();
+    return m_eglDisplay;
 }
 
 } // namespace KWin

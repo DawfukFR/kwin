@@ -35,13 +35,12 @@ public:
     ~VirtualEglGbmLayer() override;
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
     bool scanout(SurfaceItem *surfaceItem) override;
 
     QRegion currentDamage() const override;
     std::shared_ptr<GLTexture> texture() const override;
     void releaseBuffers() override;
-    std::chrono::nanoseconds queryRenderTime() const override;
 
 private:
     std::shared_ptr<EglSwapchain> createGbmSwapchain() const;

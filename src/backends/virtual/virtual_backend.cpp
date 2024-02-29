@@ -135,14 +135,14 @@ void VirtualBackend::setVirtualOutputs(const QList<OutputInfo> &infos)
     Q_EMIT outputsQueried();
 }
 
-void VirtualBackend::setEglDisplay(std::unique_ptr<EglDisplay> &&display)
+void VirtualBackend::setEglDisplay(const std::shared_ptr<EglDisplay> &display)
 {
-    m_display = std::move(display);
+    m_display = display;
 }
 
-EglDisplay *VirtualBackend::sceneEglDisplayObject() const
+std::shared_ptr<EglDisplay> VirtualBackend::sceneEglDisplayObject() const
 {
-    return m_display.get();
+    return m_display;
 }
 
 } // namespace KWin

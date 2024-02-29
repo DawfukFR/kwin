@@ -52,7 +52,7 @@ public:
     virtual std::unique_ptr<OpenGLBackend> createOpenGLBackend();
     virtual std::unique_ptr<QPainterBackend> createQPainterBackend();
 
-    virtual EglDisplay *sceneEglDisplayObject() const = 0;
+    virtual std::shared_ptr<EglDisplay> sceneEglDisplayObject() const = 0;
     /**
      * Returns the compositor-wide shared EGL context. This function may return EGL_NO_CONTEXT
      * if the underlying rendering backend does not use EGL.

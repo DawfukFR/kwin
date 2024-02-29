@@ -59,7 +59,7 @@ public:
 
     DrmGpu *gpu() const;
 
-    EglDisplay *displayForGpu(DrmGpu *gpu);
+    std::shared_ptr<EglDisplay> displayForGpu(DrmGpu *gpu);
     std::shared_ptr<EglContext> contextForGpu(DrmGpu *gpu);
 
     bool supportsTimelines() const override;
@@ -68,7 +68,7 @@ public:
 private:
     bool initializeEgl();
     bool initRenderingContext();
-    EglDisplay *createEglDisplay(DrmGpu *gpu) const;
+    std::shared_ptr<EglDisplay> createEglDisplay(DrmGpu *gpu) const;
 
     DrmBackend *m_backend;
     std::map<EglDisplay *, std::weak_ptr<EglContext>> m_contexts;

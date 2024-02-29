@@ -42,7 +42,7 @@ public:
     std::unique_ptr<InputBackend> createInputBackend() override;
     std::unique_ptr<QPainterBackend> createQPainterBackend() override;
     std::unique_ptr<OpenGLBackend> createOpenGLBackend() override;
-    EglDisplay *sceneEglDisplayObject() const override;
+    std::shared_ptr<EglDisplay> sceneEglDisplayObject() const override;
 
     bool initialize() override;
 

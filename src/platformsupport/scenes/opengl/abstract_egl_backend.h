@@ -35,6 +35,7 @@ public:
     EGLConfig config() const;
     EglDisplay *eglDisplayObject() const override;
     EglContext *openglContext() const override;
+    std::shared_ptr<EglContext> openglContextRef() const;
 
     bool testImportBuffer(GraphicsBuffer *buffer) override;
     QHash<uint32_t, QList<uint64_t>> supportedFormats() const override;
@@ -52,7 +53,7 @@ protected:
     AbstractEglBackend(dev_t deviceId = 0);
     void cleanup();
     virtual void cleanupSurfaces();
-    void setEglDisplay(EglDisplay *display);
+    void setEglDisplay(const std::shared_ptr<EglDisplay> &display);
     void initClientExtensions();
     void initWayland();
     bool hasClientExtension(const QByteArray &ext) const;
@@ -64,7 +65,7 @@ protected:
     ::EGLContext createContextInternal(::EGLContext sharedContext);
     void teardown();
 
-    EglDisplay *m_display = nullptr;
+    std::shared_ptr<EglDisplay> m_display;
     std::shared_ptr<EglContext> m_context;
     QList<QByteArray> m_clientExtensions;
     const dev_t m_deviceId;

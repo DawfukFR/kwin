@@ -512,14 +512,14 @@ void X11StandaloneBackend::updateRefreshRate()
     m_renderLoop->setRefreshRate(refreshRate);
 }
 
-void X11StandaloneBackend::setEglDisplay(std::unique_ptr<EglDisplay> &&display)
+void X11StandaloneBackend::setEglDisplay(const std::shared_ptr<EglDisplay> &display)
 {
-    m_eglDisplay = std::move(display);
+    m_eglDisplay = display;
 }
 
-EglDisplay *X11StandaloneBackend::sceneEglDisplayObject() const
+std::shared_ptr<EglDisplay> X11StandaloneBackend::sceneEglDisplayObject() const
 {
-    return m_eglDisplay.get();
+    return m_eglDisplay;
 }
 }
 

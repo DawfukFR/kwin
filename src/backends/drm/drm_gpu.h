@@ -80,7 +80,7 @@ public:
     bool isNVidia() const;
     bool isAmdgpu() const;
     bool isVmwgfx() const;
-    EglDisplay *eglDisplay() const;
+    std::shared_ptr<EglDisplay> eglDisplay() const;
     DrmBackend *platform() const;
     /**
      * Returns the clock from which presentation timestamps are sourced. The returned value
@@ -146,7 +146,7 @@ private:
     bool m_forceModeset = false;
     bool m_supportsSyncTimelines = false;
     clockid_t m_presentationClock;
-    std::unique_ptr<EglDisplay> m_eglDisplay;
+    std::shared_ptr<EglDisplay> m_eglDisplay;
     DrmBackend *const m_platform;
 
     std::vector<std::unique_ptr<DrmPlane>> m_planes;

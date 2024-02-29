@@ -33,7 +33,7 @@ EglGbmBackend::EglGbmBackend(DrmBackend *drmBackend)
 {
     drmBackend->setRenderBackend(this);
     connect(m_backend, &DrmBackend::gpuRemoved, this, [this](DrmGpu *gpu) {
-        m_contexts.erase(gpu->eglDisplay());
+        m_contexts.erase(gpu->eglDisplay().get());
     });
 }
 
@@ -68,7 +68,7 @@ bool EglGbmBackend::initializeEgl()
     return true;
 }
 
-EglDisplay *EglGbmBackend::createEglDisplay(DrmGpu *gpu) const
+std::shared_ptr<EglDisplay> EglGbmBackend::createEglDisplay(DrmGpu *gpu) const
 {
     for (const QByteArray &extension : {QByteArrayLiteral("EGL_EXT_platform_base"), QByteArrayLiteral("EGL_KHR_platform_gbm")}) {
         if (!hasClientExtension(extension)) {
@@ -100,11 +100,8 @@ bool EglGbmBackend::initRenderingContext()
     return createContext(EGL_NO_CONFIG_KHR) && makeCurrent();
 }
 
-EglDisplay *EglGbmBackend::displayForGpu(DrmGpu *gpu)
+std::shared_ptr<EglDisplay> EglGbmBackend::displayForGpu(DrmGpu *gpu)
 {
-    if (gpu == m_backend->primaryGpu()) {
-        return eglDisplayObject();
-    }
     auto display = gpu->eglDisplay();
     if (!display) {
         display = createEglDisplay(gpu);
@@ -124,7 +121,7 @@ std::shared_ptr<EglContext> EglGbmBackend::contextForGpu(DrmGpu *gpu)
             return nullptr;
         }
     }
-    auto &context = m_contexts[display];
+    auto &context = m_contexts[display.get()];
     if (const auto c = context.lock()) {
         return c;
     }

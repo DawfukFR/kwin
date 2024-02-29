@@ -317,7 +317,7 @@ void WaylandCompositor::addOutput(Output *output)
                 renderLayer.delegate()->paint(renderTarget, infiniteRegion());
                 renderLayer.delegate()->postPaint();
 
-                if (!outputLayer->endFrame(infiniteRegion(), infiniteRegion())) {
+                if (!outputLayer->endFrame(infiniteRegion(), infiniteRegion(), nullptr)) {
                     return false;
                 }
             } else {

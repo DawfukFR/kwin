@@ -92,9 +92,7 @@ std::optional<OutputLayerBeginFrameInfo> WaylandEglPrimaryLayer::beginFrame()
     }
 
     const QRegion repair = bufferAgeEnabled ? m_damageJournal.accumulate(m_buffer->age(), infiniteRegion()) : infiniteRegion();
-    if (!m_query) {
-        m_query = std::make_unique<GLRenderTimeQuery>();
-    }
+    m_query = std::make_unique<GLRenderTimeQuery>(m_backend->openglContextRef());
     m_query->begin();
     return OutputLayerBeginFrameInfo{
         .renderTarget = RenderTarget(m_buffer->framebuffer()),
@@ -102,9 +100,12 @@ std::optional<OutputLayerBeginFrameInfo> WaylandEglPrimaryLayer::beginFrame()
     };
 }
 
-bool WaylandEglPrimaryLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion)
+bool WaylandEglPrimaryLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame)
 {
     m_query->end();
+    if (frame) {
+        frame->addRenderTimeQuery(std::move(m_query));
+    }
     // Flush rendering commands to the dmabuf.
     glFlush();
     EGLNativeFence releaseFence{m_backend->eglDisplayObject()};
@@ -140,12 +141,6 @@ void WaylandEglPrimaryLayer::present()
     surface->commit();
     Q_EMIT m_waylandOutput->outputChange(m_damageJournal.lastDamage());
     m_presentationBuffer = nullptr;
-}
-
-std::chrono::nanoseconds WaylandEglPrimaryLayer::queryRenderTime() const
-{
-    m_backend->makeCurrent();
-    return m_query->result();
 }
 
 WaylandEglCursorLayer::WaylandEglCursorLayer(WaylandOutput *output, WaylandEglBackend *backend)
@@ -195,9 +190,7 @@ std::optional<OutputLayerBeginFrameInfo> WaylandEglCursorLayer::beginFrame()
         return std::nullopt;
     }
 
-    if (!m_query) {
-        m_query = std::make_unique<GLRenderTimeQuery>();
-    }
+    m_query = std::make_unique<GLRenderTimeQuery>(m_backend->openglContextRef());
     m_query->begin();
     return OutputLayerBeginFrameInfo{
         .renderTarget = RenderTarget(m_buffer->framebuffer()),
@@ -205,9 +198,12 @@ std::optional<OutputLayerBeginFrameInfo> WaylandEglCursorLayer::beginFrame()
     };
 }
 
-bool WaylandEglCursorLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion)
+bool WaylandEglCursorLayer::endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame)
 {
     m_query->end();
+    if (frame) {
+        frame->addRenderTimeQuery(std::move(m_query));
+    }
     // Flush rendering commands to the dmabuf.
     glFlush();
 
@@ -219,12 +215,6 @@ bool WaylandEglCursorLayer::endFrame(const QRegion &renderedRegion, const QRegio
     EGLNativeFence releaseFence{m_backend->eglDisplayObject()};
     m_swapchain->release(m_buffer, releaseFence.fileDescriptor().duplicate());
     return true;
-}
-
-std::chrono::nanoseconds WaylandEglCursorLayer::queryRenderTime() const
-{
-    m_backend->makeCurrent();
-    return m_query->result();
 }
 
 WaylandEglBackend::WaylandEglBackend(WaylandBackend *b)
@@ -283,7 +273,7 @@ bool WaylandEglBackend::initializeEgl()
         m_backend->setEglDisplay(EglDisplay::create(eglGetPlatformDisplayEXT(EGL_PLATFORM_GBM_KHR, m_backend->drmDevice()->gbmDevice(), nullptr)));
     }
 
-    auto display = m_backend->sceneEglDisplayObject();
+    const auto display = m_backend->sceneEglDisplayObject();
     if (!display) {
         return false;
     }

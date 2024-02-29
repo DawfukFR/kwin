@@ -43,7 +43,7 @@ EGLRenderTarget::~EGLRenderTarget()
     texture.reset();
 }
 
-EGLPlatformContext::EGLPlatformContext(QOpenGLContext *context, EglDisplay *display)
+EGLPlatformContext::EGLPlatformContext(QOpenGLContext *context, const std::shared_ptr<EglDisplay> &display)
     : m_eglDisplay(display)
 {
     create(context->format(), kwinApp()->outputBackend()->sceneEglGlobalShareContext());
@@ -179,13 +179,13 @@ void EGLPlatformContext::create(const QSurfaceFormat &format, ::EGLContext share
         return;
     }
 
-    m_config = configFromFormat(m_eglDisplay, format);
+    m_config = configFromFormat(m_eglDisplay.get(), format);
     if (m_config == EGL_NO_CONFIG_KHR) {
         qCWarning(KWIN_QPA) << "Could not find suitable EGLConfig for" << format;
         return;
     }
 
-    m_format = formatFromConfig(m_eglDisplay, m_config);
+    m_format = formatFromConfig(m_eglDisplay.get(), m_config);
     m_eglContext = EglContext::create(m_eglDisplay, m_config, shareContext);
     if (!m_eglContext) {
         qCWarning(KWIN_QPA) << "Failed to create EGL context";

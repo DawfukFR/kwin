@@ -31,10 +31,9 @@ public:
     VirtualEglLayer(Output *output, VirtualEglBackend *backend);
 
     std::optional<OutputLayerBeginFrameInfo> beginFrame() override;
-    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion) override;
+    bool endFrame(const QRegion &renderedRegion, const QRegion &damagedRegion, OutputFrame *frame) override;
 
     std::shared_ptr<GLTexture> texture() const;
-    std::chrono::nanoseconds queryRenderTime() const override;
 
 private:
     VirtualEglBackend *const m_backend;

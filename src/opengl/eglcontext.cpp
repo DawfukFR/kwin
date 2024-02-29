@@ -23,9 +23,9 @@
 namespace KWin
 {
 
-std::unique_ptr<EglContext> EglContext::create(EglDisplay *display, EGLConfig config, ::EGLContext sharedContext)
+std::unique_ptr<EglContext> EglContext::create(const std::shared_ptr<EglDisplay> &display, EGLConfig config, ::EGLContext sharedContext)
 {
-    auto handle = createContext(display, config, sharedContext);
+    auto handle = createContext(display.get(), config, sharedContext);
     if (!handle) {
         return nullptr;
     }
@@ -47,7 +47,7 @@ static eglFuncPtr getProcAddress(const char *name)
     return eglGetProcAddress(name);
 }
 
-EglContext::EglContext(EglDisplay *display, EGLConfig config, ::EGLContext context)
+EglContext::EglContext(const std::shared_ptr<EglDisplay> &display, EGLConfig config, ::EGLContext context)
     : OpenGlContext(true)
     , m_display(display)
     , m_handle(context)
@@ -108,7 +108,7 @@ void EglContext::doneCurrent() const
 
 EglDisplay *EglContext::displayObject() const
 {
-    return m_display;
+    return m_display.get();
 }
 
 ::EGLContext EglContext::handle() const

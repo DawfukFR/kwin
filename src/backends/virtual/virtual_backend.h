@@ -45,8 +45,8 @@ public:
 
     QList<CompositingType> supportedCompositors() const override;
 
-    void setEglDisplay(std::unique_ptr<EglDisplay> &&display);
-    EglDisplay *sceneEglDisplayObject() const override;
+    void setEglDisplay(const std::shared_ptr<EglDisplay> &display);
+    std::shared_ptr<EglDisplay> sceneEglDisplayObject() const override;
 
     DrmDevice *drmDevice() const;
 
@@ -58,7 +58,7 @@ private:
 
     QList<VirtualOutput *> m_outputs;
     std::unique_ptr<DrmDevice> m_drmDevice;
-    std::unique_ptr<EglDisplay> m_display;
+    std::shared_ptr<EglDisplay> m_display;
 };
 
 } // namespace KWin

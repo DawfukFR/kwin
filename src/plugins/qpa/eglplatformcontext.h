@@ -46,7 +46,7 @@ class EGLPlatformContext : public QObject, public QPlatformOpenGLContext
     Q_OBJECT
 
 public:
-    EGLPlatformContext(QOpenGLContext *context, EglDisplay *display);
+    EGLPlatformContext(QOpenGLContext *context, const std::shared_ptr<EglDisplay> &display);
     ~EGLPlatformContext() override;
 
     bool makeCurrent(QPlatformSurface *surface) override;
@@ -62,7 +62,7 @@ private:
     void create(const QSurfaceFormat &format, ::EGLContext shareContext);
     void updateFormatFromContext();
 
-    EglDisplay *m_eglDisplay = nullptr;
+    const std::shared_ptr<EglDisplay> m_eglDisplay;
     QSurfaceFormat m_format;
     EGLConfig m_config = EGL_NO_CONFIG_KHR;
     std::unique_ptr<EglContext> m_eglContext;

@@ -247,8 +247,8 @@ public:
     {
         m_eglBackend = eglBackend;
     }
-    void setEglDisplay(std::unique_ptr<EglDisplay> &&display);
-    EglDisplay *sceneEglDisplayObject() const override;
+    void setEglDisplay(const std::shared_ptr<EglDisplay> &display);
+    std::shared_ptr<EglDisplay> sceneEglDisplayObject() const override;
 
 Q_SIGNALS:
     void pointerLockChanged(bool locked);
@@ -265,7 +265,7 @@ private:
     QList<WaylandOutput *> m_outputs;
     bool m_pointerLockRequested = false;
     std::unique_ptr<DrmDevice> m_drmDevice;
-    std::unique_ptr<EglDisplay> m_eglDisplay;
+    std::shared_ptr<EglDisplay> m_eglDisplay;
     std::map<GraphicsBuffer *, std::unique_ptr<WaylandBuffer>> m_buffers;
 };
 

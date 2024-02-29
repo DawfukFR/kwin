@@ -17,7 +17,7 @@
 namespace KWin
 {
 
-EGLImageTexture::EGLImageTexture(EglDisplay *display, EGLImage image, uint textureId, int internalFormat, const QSize &size, uint32_t target)
+EGLImageTexture::EGLImageTexture(const std::shared_ptr<EglDisplay> &display, EGLImage image, uint textureId, int internalFormat, const QSize &size, uint32_t target)
     : GLTexture(target, textureId, internalFormat, size, 1, true, OutputTransform::FlipY)
     , m_image(image)
     , m_display(display)
@@ -29,7 +29,7 @@ EGLImageTexture::~EGLImageTexture()
     m_display->destroyImage(m_image);
 }
 
-std::shared_ptr<EGLImageTexture> EGLImageTexture::create(EglDisplay *display, EGLImageKHR image, int internalFormat, const QSize &size, bool externalOnly)
+std::shared_ptr<EGLImageTexture> EGLImageTexture::create(const std::shared_ptr<EglDisplay> &display, EGLImageKHR image, int internalFormat, const QSize &size, bool externalOnly)
 {
     if (image == EGL_NO_IMAGE) {
         return nullptr;

@@ -70,8 +70,8 @@ public:
     RenderLoop *renderLoop() const;
     Outputs outputs() const override;
 
-    void setEglDisplay(std::unique_ptr<EglDisplay> &&display);
-    EglDisplay *sceneEglDisplayObject() const override;
+    void setEglDisplay(const std::shared_ptr<EglDisplay> &display);
+    std::shared_ptr<EglDisplay> sceneEglDisplayObject() const override;
 
 private:
     /**
@@ -102,7 +102,7 @@ private:
     std::unique_ptr<X11Keyboard> m_keyboard;
     std::unique_ptr<RenderLoop> m_renderLoop;
     QList<Output *> m_outputs;
-    std::unique_ptr<EglDisplay> m_eglDisplay;
+    std::shared_ptr<EglDisplay> m_eglDisplay;
 };
 
 }

@@ -25,7 +25,7 @@ struct DmaBufAttributes;
 class KWIN_EXPORT EglContext : public OpenGlContext
 {
 public:
-    EglContext(EglDisplay *display, EGLConfig config, ::EGLContext context);
+    EglContext(const std::shared_ptr<EglDisplay> &display, EGLConfig config, ::EGLContext context);
     ~EglContext() override;
 
     bool makeCurrent() override;
@@ -38,12 +38,12 @@ public:
     EGLConfig config() const;
     bool isValid() const;
 
-    static std::unique_ptr<EglContext> create(EglDisplay *display, EGLConfig config, ::EGLContext sharedContext);
+    static std::unique_ptr<EglContext> create(const std::shared_ptr<EglDisplay> &display, EGLConfig config, ::EGLContext sharedContext);
 
 private:
     static ::EGLContext createContext(EglDisplay *display, EGLConfig config, ::EGLContext sharedContext);
 
-    EglDisplay *const m_display;
+    const std::shared_ptr<EglDisplay> m_display;
     const ::EGLContext m_handle;
     const EGLConfig m_config;
     std::unique_ptr<ShaderManager> m_shaderManager;

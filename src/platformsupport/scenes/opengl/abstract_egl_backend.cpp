@@ -59,10 +59,6 @@ bool AbstractEglBackend::ensureGlobalShareContext(EGLConfig config)
 
 void AbstractEglBackend::destroyGlobalShareContext()
 {
-    EglDisplay *const eglDisplay = kwinApp()->outputBackend()->sceneEglDisplayObject();
-    if (!eglDisplay || !s_globalShareContext) {
-        return;
-    }
     s_globalShareContext.reset();
     kwinApp()->outputBackend()->setSceneEglGlobalShareContext(EGL_NO_CONTEXT);
 }
@@ -86,7 +82,7 @@ void AbstractEglBackend::cleanupSurfaces()
 {
 }
 
-void AbstractEglBackend::setEglDisplay(EglDisplay *display)
+void AbstractEglBackend::setEglDisplay(const std::shared_ptr<EglDisplay> &display)
 {
     m_display = display;
     setExtensions(m_display->extensions());
@@ -332,12 +328,17 @@ EGLConfig AbstractEglBackend::config() const
 
 EglDisplay *AbstractEglBackend::eglDisplayObject() const
 {
-    return m_display;
+    return m_display.get();
 }
 
 EglContext *AbstractEglBackend::openglContext() const
 {
     return m_context.get();
+}
+
+std::shared_ptr<EglContext> AbstractEglBackend::openglContextRef() const
+{
+    return m_context;
 }
 }
 

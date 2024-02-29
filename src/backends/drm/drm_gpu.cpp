@@ -647,9 +647,9 @@ bool DrmGpu::atomicModeSetting() const
     return m_atomicModeSetting;
 }
 
-EglDisplay *DrmGpu::eglDisplay() const
+std::shared_ptr<EglDisplay> DrmGpu::eglDisplay() const
 {
-    return m_eglDisplay.get();
+    return m_eglDisplay;
 }
 
 void DrmGpu::setEglDisplay(std::unique_ptr<EglDisplay> &&display)

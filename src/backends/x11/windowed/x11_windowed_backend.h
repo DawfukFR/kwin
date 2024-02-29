@@ -123,8 +123,8 @@ public:
     X11WindowedInputDevice *keyboardDevice() const;
     X11WindowedInputDevice *touchDevice() const;
 
-    void setEglDisplay(std::unique_ptr<EglDisplay> &&display);
-    EglDisplay *sceneEglDisplayObject() const override;
+    void setEglDisplay(const std::shared_ptr<EglDisplay> &display);
+    std::shared_ptr<EglDisplay> sceneEglDisplayObject() const override;
 
 private:
     void createOutputs();
@@ -175,7 +175,7 @@ private:
     QHash<uint32_t, QList<uint64_t>> m_driFormats;
 
     std::unique_ptr<DrmDevice> m_drmDevice;
-    std::unique_ptr<EglDisplay> m_eglDisplay;
+    std::shared_ptr<EglDisplay> m_eglDisplay;
 
     QList<X11WindowedOutput *> m_outputs;
 };
