@@ -1,4 +1,4 @@
-target_sources(kwin PRIVATE libeisbackend.cpp device.cpp)
+target_sources(kwin PRIVATE libeisbackend.cpp device.cpp inputcapturefilter.cpp)
 target_link_libraries(kwin PRIVATE Libeis::Libeis)
 target_compile_definitions(kwin PRIVATE KWIN_BUILD_EIS)
 ecm_qt_declare_logging_category(kwin

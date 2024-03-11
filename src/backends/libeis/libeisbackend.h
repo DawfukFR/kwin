@@ -7,12 +7,16 @@
 #pragma once
 
 #include "core/inputbackend.h"
+
+#include "inputcapturefilter.h"
+
 #include "utils/ramfile.h"
 
 #include <memory>
 
 extern "C" {
 struct eis;
+struct eis_client;
 struct eis_seat;
 struct eis_device;
 }
@@ -24,7 +28,19 @@ class Output;
 namespace Libeis
 {
 class Device;
-class ClientSeat;
+
+struct ClientSeat
+{
+public:
+    ClientSeat(eis_seat *eis_seat);
+    ~ClientSeat();
+    void updateDevices();
+    eis_seat *seat;
+    eis_client *client;
+    std::unique_ptr<Device> absoluteDevice;
+    std::unique_ptr<Device> pointer;
+    std::unique_ptr<Device> keyboard;
+};
 }
 
 class LibeisBackend : public InputBackend
@@ -34,6 +50,11 @@ public:
     explicit LibeisBackend(QObject *parent = nullptr);
     ~LibeisBackend() override;
     void initialize() override;
+    InputEventFilter *inputCaptureFilter()
+    {
+        return &m_filter;
+    }
+    Libeis::ClientSeat *capturingClient() const;
 
 private:
     void handleEvents();
@@ -43,6 +64,8 @@ private:
 
     eis *m_eis = nullptr;
     RamFile m_keymapFile;
+    Libeis::InputCaptureFilter m_filter;
+
     std::vector<std::unique_ptr<Libeis::ClientSeat>> m_seats;
 };
 

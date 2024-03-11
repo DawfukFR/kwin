@@ -47,25 +47,16 @@ eis_log_handler(eis *eis, eis_log_priority priority, const char *message, eis_lo
     }
 }
 
-class ClientSeat
+ClientSeat::ClientSeat(eis_seat *eis_seat)
+    : seat(eis_seat)
 {
-public:
-    ClientSeat(eis_seat *eis_seat)
-        : seat(eis_seat)
-    {
-        eis_seat_set_user_data(eis_seat, this);
-        eis_client_set_user_data(eis_seat_get_client(eis_seat), this);
-    }
-    ~ClientSeat()
-    {
-        eis_seat_unref(seat);
-    }
-    void updateDevices();
-    eis_seat *seat;
-    std::unique_ptr<Device> absoluteDevice;
-    std::unique_ptr<Device> pointer;
-    std::unique_ptr<Device> keyboard;
-};
+    eis_seat_set_user_data(eis_seat, this);
+    eis_client_set_user_data(eis_seat_get_client(eis_seat), this);
+}
+ClientSeat::~ClientSeat()
+{
+    eis_seat_unref(seat);
+}
 
 eis_device *createDevice(eis_seat *seat, const QByteArray &name)
 {
@@ -126,6 +117,7 @@ eis_device *LibeisBackend::createKeyboard(eis_seat *seat)
 
 LibeisBackend::LibeisBackend(QObject *parent)
     : InputBackend(parent)
+    , m_filter(*this)
 {
     qRegisterMetaType<KWin::InputRedirection::PointerButtonState>();
     qRegisterMetaType<InputRedirection::PointerAxis>();
@@ -191,6 +183,16 @@ void LibeisBackend::initialize()
         Qt::SingleShotConnection);
 }
 
+Libeis::ClientSeat *LibeisBackend::capturingClient() const
+{
+    // TODO better impl
+    auto client = [](const std::unique_ptr<Libeis::ClientSeat> &seat) {
+        return eis_seat_get_client(seat->seat);
+    };
+    auto it = std::ranges::find_if_not(m_seats, &eis_client_is_sender, client);
+    return (it == std::ranges::end(m_seats) ? nullptr : it->get());
+}
+
 static std::chrono::microseconds currentTime()
 {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
@@ -206,22 +208,18 @@ void LibeisBackend::handleEvents()
         auto client = eis_event_get_client(event);
         switch (eis_event_get_type(event)) {
         case EIS_EVENT_CLIENT_CONNECT: {
-            if (!eis_client_is_sender(client)) {
-                qCDebug(KWIN_EIS) << "disconnecting receiving client";
-                // TODO right now only sender clients are implemented
-                eis_client_disconnect(client);
-                return;
-            }
             eis_client_connect(client);
 
             const char *clientName = eis_client_get_name(client);
             auto seat = eis_client_new_seat(client, QByteArrayLiteral(" seat").prepend(clientName));
             eis_seat_configure_capability(seat, EIS_DEVICE_CAP_POINTER);
-            eis_seat_configure_capability(seat, EIS_DEVICE_CAP_POINTER_ABSOLUTE);
             eis_seat_configure_capability(seat, EIS_DEVICE_CAP_KEYBOARD);
             eis_seat_configure_capability(seat, EIS_DEVICE_CAP_TOUCH);
             eis_seat_configure_capability(seat, EIS_DEVICE_CAP_SCROLL);
             eis_seat_configure_capability(seat, EIS_DEVICE_CAP_BUTTON);
+            if (eis_client_is_sender(client)) {
+                eis_seat_configure_capability(seat, EIS_DEVICE_CAP_POINTER_ABSOLUTE);
+            }
             eis_seat_add(seat);
             m_seats.emplace_back(std::make_unique<Libeis::ClientSeat>(seat));
             qCDebug(KWIN_EIS) << "New eis client" << clientName;
@@ -245,10 +243,16 @@ void LibeisBackend::handleEvents()
                     if (!device) {
                         device = std::make_unique<Libeis::Device>(std::invoke(createFunc, this, (eis_event_get_seat(event))));
                         device->setEnabled(true);
-                        Q_EMIT deviceAdded(device.get());
+                        if (eis_client_is_sender(eis_event_get_client(event))) {
+                            Q_EMIT deviceAdded(device.get());
+                        } else {
+                            eis_device_start_emulating(device->eisDevice(), 0);
+                        }
                     }
                 } else if (device) {
-                    Q_EMIT deviceRemoved(device.get());
+                    if (eis_client_is_sender(eis_event_get_client(event))) {
+                        Q_EMIT deviceRemoved(device.get());
+                    }
                     device.reset();
                 }
             };

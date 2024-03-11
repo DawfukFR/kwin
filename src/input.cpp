@@ -2931,6 +2931,14 @@ void InputRedirection::setupInputFilters()
     m_lockscreenFilter = std::make_unique<LockScreenFilter>();
     installInputEventFilter(m_lockscreenFilter.get());
 
+#ifdef KWIN_BUILD_EIS
+    for (const auto &backend : m_inputBackends) {
+        if (auto eis = qobject_cast<LibeisBackend *>(backend.get())) {
+            installInputEventFilter(eis->inputCaptureFilter());
+        }
+    }
+#endif
+
     if (hasGlobalShortcutSupport) {
         m_screenEdgeFilter = std::make_unique<ScreenEdgeInputFilter>();
         installInputEventFilter(m_screenEdgeFilter.get());
