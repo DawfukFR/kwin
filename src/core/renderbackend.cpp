@@ -35,6 +35,7 @@ std::chrono::nanoseconds CpuRenderTimeQuery::queryRenderTime()
 OutputFrame::OutputFrame(RenderLoop *loop, std::chrono::nanoseconds refreshDuration)
     : m_loop(loop)
     , m_refreshDuration(refreshDuration)
+    , m_targetPresentationTimestamp(loop->nextPresentationTimestamp())
 {
 }
 
@@ -43,6 +44,11 @@ OutputFrame::~OutputFrame()
     Q_ASSERT(QThread::currentThread() == QApplication::instance()->thread());
     if (!m_presented && m_loop) {
         RenderLoopPrivate::get(m_loop)->notifyFrameDropped();
+        if (std::chrono::steady_clock::now().time_since_epoch() > m_targetPresentationTimestamp + m_refreshDuration / 2) {
+            qWarning() << "frame dropped GPU side (and replaced)";
+        } else {
+            qWarning() << "frame replaced";
+        }
     }
 }
 
@@ -58,6 +64,10 @@ void OutputFrame::presented(std::chrono::nanoseconds timestamp, PresentationMode
                       });
     const auto renderTime = std::accumulate(view.begin(), view.end(), std::chrono::nanoseconds::zero());
     if (m_loop) {
+        qWarning() << "render time:" << std::chrono::duration_cast<std::chrono::microseconds>(renderTime);
+        if (mode == PresentationMode::VSync && timestamp > m_targetPresentationTimestamp + m_refreshDuration / 2) {
+            qWarning() << "frame dropped (CPU side)";
+        }
         RenderLoopPrivate::get(m_loop)->notifyFrameCompleted(timestamp, renderTime, mode);
     }
     m_presented = true;

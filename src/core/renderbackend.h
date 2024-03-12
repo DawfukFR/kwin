@@ -84,6 +84,7 @@ public:
 private:
     const QPointer<RenderLoop> m_loop;
     const std::chrono::nanoseconds m_refreshDuration;
+    const std::chrono::nanoseconds m_targetPresentationTimestamp;
     std::vector<std::unique_ptr<PresentationFeedback>> m_feedbacks;
     std::optional<ContentType> m_contentType;
     PresentationMode m_presentationMode = PresentationMode::VSync;
