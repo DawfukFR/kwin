@@ -3522,6 +3522,7 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
 
         doSetQuickTileMode();
         Q_EMIT quickTileModeChanged();
+
         return;
     }
 
