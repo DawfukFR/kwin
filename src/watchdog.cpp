@@ -34,7 +34,8 @@ public:
             return;
         }
         qunsetenv("WATCHDOG_USEC");
-        qunsetenv("WATCHDOG_PID");
+        // qunsetenv("WATCHDOG_PID"); //Dave, put this into my amazing new lib and share this
+        // or we can just use getpid now.
         auto t = new QTimer(this);
         t->setInterval(std::chrono::duration_cast<std::chrono::milliseconds>(watchdogIntervalInUs));
         t->setSingleShot(false);

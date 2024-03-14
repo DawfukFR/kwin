@@ -11,6 +11,7 @@ target_sources(kwin PRIVATE
     udev.cpp
     vsyncmonitor.cpp
     xcursortheme.cpp
+    systemservice.cpp
 )
 if (KWIN_BUILD_X11)
     target_sources(kwin PRIVATE xcbutils.cpp)

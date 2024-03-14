@@ -333,6 +333,7 @@ int main(int argc, char *argv[])
                                          QStringLiteral("count"));
     outputCountOption.setDefaultValue(QString::number(1));
 
+    // Dave, deprecate this
     QCommandLineOption waylandSocketFdOption(QStringLiteral("wayland-fd"),
                                              i18n("Wayland socket to use for incoming connections. This can be combined with --socket to name the socket"),
                                              QStringLiteral("wayland-fd"));
@@ -514,25 +515,13 @@ int main(int argc, char *argv[])
     }
 
     const QString socketName = parser.value(waylandSocketOption);
-    if (parser.isSet(waylandSocketFdOption)) {
-        bool ok;
-        int fd = parser.value(waylandSocketFdOption).toInt(&ok);
-        if (ok) {
-            // make sure we don't leak this FD to children
-            fcntl(fd, F_SETFD, FD_CLOEXEC);
-            server->display()->addSocketFileDescriptor(fd, socketName);
-        } else {
-            std::cerr << "FATAL ERROR: could not parse socket FD" << std::endl;
-            return 1;
-        }
-    } else {
-        // socketName empty is fine here, addSocketName will automatically pick one
-        if (!server->display()->addSocketName(socketName)) {
-            std::cerr << "FATAL ERROR: could not add wayland socket " << qPrintable(socketName) << std::endl;
-            return 1;
-        }
-        qInfo() << "Accepting client connections on sockets:" << server->display()->socketNames();
+
+    // socketName empty is fine here, addSocketName will automatically pick one
+    if (!server->display()->addSocketName(socketName)) {
+        std::cerr << "FATAL ERROR: could not add wayland socket " << qPrintable(socketName) << std::endl;
+        return 1;
     }
+    qInfo() << "Accepting client connections on sockets:" << server->display()->socketNames();
 
     if (!server->init(flags)) {
         std::cerr << "FATAL ERROR: could not create Wayland server" << std::endl;

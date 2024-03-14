@@ -216,6 +216,8 @@ target_sources(kwin PRIVATE
     xdgshellintegration.cpp
     xdgshellwindow.cpp
     xkb.cpp
+
+    helpers/wayland_wrapper/wl-socket.c
 )
 
 target_link_libraries(kwin
@@ -254,6 +256,7 @@ target_link_libraries(kwin
         Threads::Threads
         lcms2::lcms2
         PkgConfig::libdisplayinfo
+        PkgConfig::libsystemd
 )
 
 if (TARGET K::KGlobalAccelD)
@@ -295,6 +298,7 @@ if (KWIN_BUILD_X11)
             XCB::XCB
             XCB::XFIXES
             XCB::XINERAMA
+
     )
 endif()
 
