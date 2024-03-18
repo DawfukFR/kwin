@@ -285,6 +285,11 @@ std::chrono::nanoseconds SurfaceItem::frameTimeEstimation() const
     }
 }
 
+double SurfaceItem::alphaMultiplier() const
+{
+    return m_alphaMultiplier;
+}
+
 SurfaceTexture::~SurfaceTexture()
 {
 }
