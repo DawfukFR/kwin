@@ -542,6 +542,8 @@ class KWIN_EXPORT Window : public QObject
      */
     Q_PROPERTY(bool inputMethod READ isInputMethod)
 
+    Q_PROPERTY(double targetScale READ targetScale NOTIFY targetScaleChanged);
+
 public:
     ~Window() override;
 
@@ -1325,6 +1327,8 @@ public:
     void refOffscreenRendering();
     void unrefOffscreenRendering();
 
+    double targetScale() const;
+
 public Q_SLOTS:
     virtual void closeWindow() = 0;
 
@@ -1440,6 +1444,7 @@ Q_SIGNALS:
     void readyForPaintingChanged();
     void maximizeGeometryRestoreChanged();
     void fullscreenGeometryRestoreChanged();
+    void targetScaleChanged();
 
 protected:
     Window();
@@ -1726,6 +1731,7 @@ protected:
 
     void cleanTabBox();
     void maybeSendFrameCallback();
+    void updateTargetScale();
 
     Output *m_output = nullptr;
     QRectF m_frameGeometry;
@@ -1843,6 +1849,7 @@ protected:
     bool m_lockScreenOverlay = false;
     uint32_t m_offscreenRenderCount = 0;
     QTimer m_offscreenFramecallbackTimer;
+    double m_targetScale = 1;
 };
 
 /**
