@@ -3481,11 +3481,9 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
 
     if (mode == QuickTileMode(QuickTileFlag::Maximize)) {
         if (requestedMaximizeMode() == MaximizeFull) {
-            m_quickTileMode = int(QuickTileFlag::None);
             setMaximize(false, false);
         } else {
             QRectF effectiveGeometryRestore = quickTileGeometryRestore();
-            m_quickTileMode = int(QuickTileFlag::Maximize);
             setMaximize(true, true);
             setGeometryRestore(effectiveGeometryRestore);
         }
@@ -3507,7 +3505,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
         Output *output = workspace()->outputAt(whichScreen);
 
         if (mode != QuickTileMode(QuickTileFlag::None)) {
-            m_quickTileMode = int(QuickTileFlag::None);
 
             setMaximize(false, false);
 
@@ -3570,12 +3567,10 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
             // Store geometry first, so we can go out of this tile later.
             setGeometryRestore(quickTileGeometryRestore());
         }
-        m_quickTileMode = mode;
     }
 
     if (mode == QuickTileMode(QuickTileFlag::None)) {
         setTile(nullptr);
-        m_quickTileMode = int(QuickTileFlag::None);
 
         QRectF geometry = moveResizeGeometry();
         if (geometryRestore().isValid()) {
