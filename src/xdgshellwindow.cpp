@@ -1604,6 +1604,9 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
     moveResize(geometry);
     if (oldQuickTileMode != quickTileMode() || oldTile != tile()) {
         doSetQuickTileMode();
+        if (oldTile == tile()) {
+            Q_EMIT quickTileModeChanged();
+        }
     }
 
     doSetMaximized();

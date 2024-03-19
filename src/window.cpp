@@ -3488,7 +3488,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
             setGeometryRestore(effectiveGeometryRestore);
         }
         doSetQuickTileMode();
-        Q_EMIT quickTileModeChanged();
         return;
     }
 
@@ -3520,7 +3519,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
         }
 
         doSetQuickTileMode();
-        Q_EMIT quickTileModeChanged();
 
         return;
     }
@@ -3600,7 +3598,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
     }
 
     doSetQuickTileMode();
-    Q_EMIT quickTileModeChanged();
 }
 
 QuickTileMode Window::quickTileMode() const
@@ -3626,6 +3623,7 @@ void Window::setTile(Tile *tile)
         m_tile->removeWindow(this);
     }
 
+    int oldTileMode = quickTileMode();
     m_tile = tile;
 
     if (m_tile) {
@@ -3634,6 +3632,10 @@ void Window::setTile(Tile *tile)
     }
 
     Q_EMIT tileChanged(tile);
+
+    if (oldTileMode != quickTileMode()) {
+        Q_EMIT quickTileModeChanged();
+    }
 }
 
 Tile *Window::tile() const
