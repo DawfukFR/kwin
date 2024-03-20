@@ -3339,7 +3339,13 @@ QRectF Window::moveResizeGeometry() const
 
 void Window::setMoveResizeGeometry(const QRectF &geo)
 {
+    const auto snapToPixelGrid = [this](double value) {
+        return (value * m_targetScale) / m_targetScale;
+    };
     m_moveResizeGeometry = geo;
+    // snap the size to the pixel grid
+    m_moveResizeGeometry.setWidth(snapToPixelGrid(m_moveResizeGeometry.width() - borderLeft() - borderRight()) + borderLeft() + borderRight());
+    m_moveResizeGeometry.setHeight(snapToPixelGrid(m_moveResizeGeometry.height() - borderTop() - borderBottom()) + borderTop() + borderBottom());
     m_moveResizeOutput = workspace()->outputAt(geo.center());
 }
 
@@ -3365,7 +3371,7 @@ void Window::move(const QPointF &point)
     const QRectF rect = QRectF(point, m_moveResizeGeometry.size());
 
     setMoveResizeGeometry(rect);
-    moveResizeInternal(rect, MoveResizeMode::Move);
+    moveResizeInternal(m_moveResizeGeometry, MoveResizeMode::Move);
 }
 
 void Window::resize(const QSizeF &size)
@@ -3373,13 +3379,13 @@ void Window::resize(const QSizeF &size)
     const QRectF rect = QRectF(m_moveResizeGeometry.topLeft(), size);
 
     setMoveResizeGeometry(rect);
-    moveResizeInternal(rect, MoveResizeMode::Resize);
+    moveResizeInternal(m_moveResizeGeometry, MoveResizeMode::Resize);
 }
 
 void Window::moveResize(const QRectF &rect)
 {
     setMoveResizeGeometry(rect);
-    moveResizeInternal(rect, MoveResizeMode::MoveResize);
+    moveResizeInternal(m_moveResizeGeometry, MoveResizeMode::MoveResize);
 }
 
 void Window::setElectricBorderMode(QuickTileMode mode)
@@ -4295,6 +4301,15 @@ void Window::updateTargetScale()
     const double newScale = m_moveResizeOutput->scale();
     if (newScale != m_targetScale) {
         m_targetScale = newScale;
+
+        // TODO clean this up, this should be in some more central place
+        const auto snapToPixelGrid = [this](double value) {
+            return (value * m_targetScale) / m_targetScale;
+        };
+        // snap the size to the pixel grid
+        m_moveResizeGeometry.setWidth(snapToPixelGrid(m_moveResizeGeometry.width() - borderLeft() - borderRight()) + borderLeft() + borderRight());
+        m_moveResizeGeometry.setHeight(snapToPixelGrid(m_moveResizeGeometry.height() - borderTop() - borderBottom()) + borderTop() + borderBottom());
+
         Q_EMIT targetScaleChanged();
     }
 }
