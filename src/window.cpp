@@ -3503,10 +3503,15 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
     // restore from maximized so that it is possible to tile maximized windows with one hit or by dragging
     if (requestedMaximizeMode() != MaximizeRestore) {
         Output *output = workspace()->outputAt(whichScreen);
+        Tile *tile = workspace()->tileManager(output)->quickTile(mode);
 
         if (mode != QuickTileMode(QuickTileFlag::None)) {
-            // FIXME: First quicktilemodechange happens
-            //  setMaximize(false, false);
+            if (!tile) {
+                // If there is a tile, it will change the maximize state accordingly.
+                // If we unconditionally set maximize here, there will be a double
+                // quickTileModeChanged() emitted
+                setMaximize(false, false);
+            }
             moveResize(quickTileGeometry(mode, keyboard ? moveResizeGeometry().center() : Cursors::self()->mouse()->pos()));
             // Store the mode change
         } else {
@@ -3514,9 +3519,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
         }
 
         if (mode != QuickTileMode(QuickTileFlag::Custom)) {
-            Tile *tile = workspace()->tileManager(output)->quickTile(mode);
-            qWarning() << "GGGGGGGGGGGGGGGGGGGG" << tile << mode;
-            // FIXME: Second quicktilemodechange happens
             setTile(tile);
         }
 
@@ -3635,7 +3637,6 @@ void Window::setTile(Tile *tile)
         Q_ASSERT(!isDeleted());
         m_tile->addWindow(this);
     }
-    qWarning() << "tilato" << tile << m_setTileRecursion << oldTileMode << quickTileMode();
     if (m_setTileRecursion) {
         return;
     }
@@ -3643,7 +3644,6 @@ void Window::setTile(Tile *tile)
     Q_EMIT tileChanged(tile);
 
     if (oldTileMode != quickTileMode()) {
-        qWarning() << "SETTILE" << m_tile;
         Q_EMIT quickTileModeChanged();
     }
 }
