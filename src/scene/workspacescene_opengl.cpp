@@ -452,8 +452,7 @@ void SceneOpenGLDecorationRenderer::resizeTexture()
     client()->window()->layoutDecorationRects(left, top, right, bottom);
     QSize size;
 
-    size.rwidth() = toNativeSize(std::max(std::max(top.width(), bottom.width()),
-                                          std::max(left.height(), right.height())));
+    size.rwidth() = toNativeSize(std::max({top.width(), bottom.width(), left.height(), right.height()}));
     size.rheight() = toNativeSize(top.height()) + toNativeSize(bottom.height()) + toNativeSize(left.width()) + toNativeSize(right.width());
 
     size.rheight() += 4 * (2 * TexturePad);
@@ -478,7 +477,7 @@ void SceneOpenGLDecorationRenderer::resizeTexture()
     }
 }
 
-int SceneOpenGLDecorationRenderer::toNativeSize(int size) const
+int SceneOpenGLDecorationRenderer::toNativeSize(double size) const
 {
     return std::round(size * effectiveDevicePixelRatio());
 }
