@@ -20,6 +20,7 @@
 #include "placement.h"
 #include "pointer_input.h"
 #include "tablet_input.h"
+#include "tiles/tilemanager.h"
 #include "touch_input.h"
 #include "utils/subsurfacemonitor.h"
 #include "virtualdesktops.h"
@@ -123,7 +124,7 @@ void XdgSurfaceWindow::sendConfigure()
     configureEvent->gravity = m_nextGravity;
     configureEvent->flags |= m_configureFlags;
     m_configureFlags = {};
-
+    qWarning() << "SEND CONFIGURE";
     m_configureEvents.append(configureEvent);
 }
 
@@ -816,8 +817,8 @@ static Qt::Edges anchorsForQuickTileMode(QuickTileMode mode)
 
 void XdgToplevelWindow::doSetQuickTileMode()
 {
-    const Qt::Edges anchors = anchorsForQuickTileMode(quickTileMode());
-
+    const Qt::Edges anchors = anchorsForQuickTileMode(m_requestedQuickTileMode);
+    qWarning() << "AAAAdoSetQuickTileMode" << m_requestedQuickTileMode << anchors;
     if (anchors & Qt::LeftEdge) {
         m_nextStates |= XdgToplevelInterface::State::TiledLeft;
     } else {
@@ -842,6 +843,11 @@ void XdgToplevelWindow::doSetQuickTileMode()
         m_nextStates &= ~XdgToplevelInterface::State::TiledBottom;
     }
 
+    Tile *tile = workspace()->tileManager(output())->quickTile(m_requestedQuickTileMode);
+    if (tile) {
+        qWarning() << "RESIZING" << tile->absoluteGeometry() << frameGeometry();
+        moveResize(tile->absoluteGeometry());
+    }
     scheduleConfigure();
 }
 
@@ -1034,6 +1040,31 @@ void XdgToplevelWindow::handleStatesAcknowledged(const XdgToplevelInterface::Sta
     }
     if (delta & XdgToplevelInterface::State::FullScreen) {
         updateFullScreenMode(states & XdgToplevelInterface::State::FullScreen);
+    }
+
+    if (delta & (XdgToplevelInterface::State::TiledLeft | XdgToplevelInterface::State::TiledTop | XdgToplevelInterface::State::TiledRight | XdgToplevelInterface::State::TiledBottom)) {
+        QuickTileMode newTileMode = QuickTileFlag::None;
+        if (states & XdgToplevelInterface::State::TiledLeft) {
+            newTileMode |= QuickTileFlag::Left; // | QuickTileFlag::Vertical;
+        }
+        if (states & XdgToplevelInterface::State::TiledTop) {
+            newTileMode |= QuickTileFlag::Top; // | QuickTileFlag::Horizontal;
+        }
+        if (states & XdgToplevelInterface::State::TiledRight) {
+            newTileMode |= QuickTileFlag::Right; // | QuickTileFlag::Vertical;
+        }
+        if (states & XdgToplevelInterface::State::TiledBottom) {
+            newTileMode |= QuickTileFlag::Bottom; // | QuickTileFlag::Horizontal;
+        }
+        qWarning() << "handleStatesAcknowledged" << newTileMode;
+        // if (newTileMode != quickTileMode() && newTileMode != QuickTileFlag::Maximize && newTileMode != QuickTileFlag::Maximize && newTileMode != QuickTileFlag::None) {
+        if (newTileMode != quickTileMode()) {
+            // updateQuickTileMode(newTileMode);
+            // setQuickTileMode(newTileMode);
+            // doSetQuickTileMode();
+            setTile(workspace()->tileManager(output())->quickTile(newTileMode));
+            qWarning() << "BBBBB new" << newTileMode << "old" << quickTileMode() << tile();
+        }
     }
 
     m_acknowledgedStates = states;
@@ -1538,7 +1569,7 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
     }
 
     // Normal maximized windows are now quickTileMode() == QuickTileFlag::Maximize
-    if (currentQuickTileMode == QuickTileMode(QuickTileFlag::None) || currentQuickTileMode == QuickTileMode(QuickTileFlag::Maximize)) {
+    if (currentQuickTileMode == QuickTileMode(QuickTileFlag::None) /*|| currentQuickTileMode == QuickTileMode(QuickTileFlag::Maximize)*/) {
         QRectF savedGeometry = geometryRestore();
         if (!(oldMode & MaximizeVertical)) {
             savedGeometry.setTop(oldGeometry.top());
@@ -1590,13 +1621,23 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
     }
 
     auto oldTile = tile();
+    /* if (m_requestedMaximizeMode == MaximizeFull) {
+          if (options->electricBorderMaximize()) {
+              updateQuickTileMode(QuickTileFlag::Maximize);
+          } else {
+              updateQuickTileMode(QuickTileFlag::None);
+          }
+          setTile(nullptr);
+      } else {
+          updateQuickTileMode(QuickTileFlag::None);
+      }*/
     if (m_requestedMaximizeMode == MaximizeFull) {
         if (options->electricBorderMaximize()) {
             updateQuickTileMode(QuickTileFlag::Maximize);
         } else {
             updateQuickTileMode(QuickTileFlag::None);
         }
-        setTile(nullptr);
+        // setTile(nullptr);
     } else {
         updateQuickTileMode(QuickTileFlag::None);
     }
@@ -1605,10 +1646,10 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
     if (currentQuickTileMode != quickTileMode()) {
         doSetQuickTileMode();
     }
-    if (!oldTile && !tile()) {
-        Q_EMIT quickTileModeChanged();
-    }
-
+    /*  if (!oldTile && !tile()) {
+          Q_EMIT quickTileModeChanged();
+      }
+  */
     doSetMaximized();
 }
 
