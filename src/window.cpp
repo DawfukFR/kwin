@@ -3339,14 +3339,11 @@ QRectF Window::moveResizeGeometry() const
 
 void Window::setMoveResizeGeometry(const QRectF &geo)
 {
-    const auto snapToPixelGrid = [this](double value) {
-        return (value * m_targetScale) / m_targetScale;
-    };
-    m_moveResizeGeometry = geo;
-    // snap the size to the pixel grid
-    m_moveResizeGeometry.setWidth(snapToPixelGrid(m_moveResizeGeometry.width() - borderLeft() - borderRight()) + borderLeft() + borderRight());
-    m_moveResizeGeometry.setHeight(snapToPixelGrid(m_moveResizeGeometry.height() - borderTop() - borderBottom()) + borderTop() + borderBottom());
-    m_moveResizeOutput = workspace()->outputAt(geo.center());
+    QRectF newGeom = geo;
+    newGeom.setWidth(snapToPixels(newGeom.width() - borderLeft() - borderRight()) + borderLeft() + borderRight());
+    newGeom.setHeight(snapToPixels(newGeom.height() - borderTop() - borderBottom()) + borderTop() + borderBottom());
+    m_moveResizeGeometry = newGeom;
+    setMoveResizeOutput(workspace()->outputAt(newGeom.center()));
 }
 
 Output *Window::moveResizeOutput() const
@@ -4301,17 +4298,26 @@ void Window::updateTargetScale()
     const double newScale = m_moveResizeOutput->scale();
     if (newScale != m_targetScale) {
         m_targetScale = newScale;
+        const auto oldClient = frameRectToClientRect(moveResizeGeometry());
 
-        // TODO clean this up, this should be in some more central place
-        const auto snapToPixelGrid = [this](double value) {
-            return (value * m_targetScale) / m_targetScale;
-        };
-        // snap the size to the pixel grid
-        m_moveResizeGeometry.setWidth(snapToPixelGrid(m_moveResizeGeometry.width() - borderLeft() - borderRight()) + borderLeft() + borderRight());
-        m_moveResizeGeometry.setHeight(snapToPixelGrid(m_moveResizeGeometry.height() - borderTop() - borderBottom()) + borderTop() + borderBottom());
-
+        // decoration etc recalculates border sizes when this is emitted
         Q_EMIT targetScaleChanged();
+
+        // snap the size to the pixel grid. TODO let subclasses do the same themselves!
+        const auto newMoveResize = clientRectToFrameRect(oldClient);
+        m_moveResizeGeometry.setWidth(snapToPixels(newMoveResize.width() + borderLeft() + borderRight()));
+        m_moveResizeGeometry.setHeight(snapToPixels(newMoveResize.height() + borderTop() + borderBottom()));
     }
+}
+
+double Window::snapToPixels(double value) const
+{
+    return std::round(value * m_targetScale) / m_targetScale;
+}
+
+QSizeF Window::snapToPixels(QSizeF value) const
+{
+    return QSizeF(snapToPixels(value.width()), snapToPixels(value.height()));
 }
 
 WindowOffscreenRenderRef::WindowOffscreenRenderRef(Window *window)
