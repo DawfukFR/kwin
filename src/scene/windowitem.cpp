@@ -231,6 +231,7 @@ void WindowItem::updateSurfacePosition()
     const QRectF bufferGeometry = m_window->bufferGeometry();
     const QRectF frameGeometry = m_window->frameGeometry();
 
+    // qWarning() << "putting the surface at" << (bufferGeometry.topLeft() - frameGeometry.topLeft()) << "aka" << (bufferGeometry.topLeft() - frameGeometry.topLeft()) * m_window->targetScale() << "w/ size" << m_surfaceItem->size() << "aka" << (m_surfaceItem->size() * m_window->targetScale());
     m_surfaceItem->setPosition(bufferGeometry.topLeft() - frameGeometry.topLeft());
 }
 

@@ -361,13 +361,21 @@ void SceneOpenGLDecorationRenderer::render(const QRegion &region)
 
     const QRect dirtyRect = region.boundingRect();
 
-    renderPart(top.toRect().intersected(dirtyRect), top.toRect(), topPosition, devicePixelRatio);
-    renderPart(bottom.toRect().intersected(dirtyRect), bottom.toRect(), bottomPosition, devicePixelRatio);
-    renderPart(left.toRect().intersected(dirtyRect), left.toRect(), leftPosition, devicePixelRatio, true);
-    renderPart(right.toRect().intersected(dirtyRect), right.toRect(), rightPosition, devicePixelRatio, true);
+    qWarning("top");
+    renderPart(top.intersected(dirtyRect), top, topPosition, devicePixelRatio);
+    qWarning("bottom");
+    renderPart(bottom.intersected(dirtyRect), bottom, bottomPosition, devicePixelRatio);
+    qWarning("left");
+    renderPart(left.intersected(dirtyRect), left, leftPosition, devicePixelRatio, true);
+    qWarning("right");
+    renderPart(right.intersected(dirtyRect), right, rightPosition, devicePixelRatio, true);
+
+    if (client()->window()->caption().contains("Dolphin")) {
+        m_texture->toImage().save("/home/xaver/kde/deco/" + client()->window()->caption() + ".png", "png");
+    }
 }
 
-void SceneOpenGLDecorationRenderer::renderPart(const QRect &rect, const QRect &partRect,
+void SceneOpenGLDecorationRenderer::renderPart(const QRectF &rect, const QRectF &partRect,
                                                const QPoint &textureOffset,
                                                qreal devicePixelRatio, bool rotated)
 {
@@ -406,13 +414,16 @@ void SceneOpenGLDecorationRenderer::renderPart(const QRect &rect, const QRect &p
     }
     painter.scale(devicePixelRatio, devicePixelRatio);
     painter.translate(-rect.topLeft());
+
+    qWarning() << "padClip =" << padClip << "transforms:" << inverseScale << "+" << padding.left() << padding.top() << "+" << rotated << "+ scale" << devicePixelRatio << "+ translate" << -rect.topLeft();
+
     renderToPainter(&painter, rect);
     painter.end();
 
     // fill padding pixels by copying from the neighbour row
     clamp(image, padClip);
 
-    QPoint dirtyOffset = (rect.topLeft() - partRect.topLeft()) * devicePixelRatio;
+    QPoint dirtyOffset = ((rect.topLeft() - partRect.topLeft()) * devicePixelRatio).toPoint();
     if (padding.top() == 0) {
         dirtyOffset.ry() += TexturePad;
     }
@@ -423,7 +434,7 @@ void SceneOpenGLDecorationRenderer::renderPart(const QRect &rect, const QRect &p
 }
 
 const QMargins SceneOpenGLDecorationRenderer::texturePadForPart(
-    const QRect &rect, const QRect &partRect)
+    const QRectF &rect, const QRectF &partRect)
 {
     QMargins result = QMargins(0, 0, 0, 0);
     if (rect.top() == partRect.top()) {

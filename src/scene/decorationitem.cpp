@@ -83,7 +83,7 @@ void DecorationRenderer::setDevicePixelRatio(qreal dpr)
     }
 }
 
-void DecorationRenderer::renderToPainter(QPainter *painter, const QRect &rect)
+void DecorationRenderer::renderToPainter(QPainter *painter, const QRectF &rect)
 {
     client()->decoration()->paint(painter, rect);
 }
@@ -148,6 +148,7 @@ void DecorationItem::preprocess()
 
 void DecorationItem::handleOutputChanged()
 {
+    // TODO port that to Window target scale changed, which takes care of this stuff already
     if (m_output) {
         disconnect(m_output, &Output::scaleChanged, this, &DecorationItem::handleOutputScaleChanged);
     }
@@ -188,35 +189,38 @@ Window *DecorationItem::window() const
 WindowQuad buildQuad(const QRectF &partRect, const QPoint &textureOffset,
                      const qreal devicePixelRatio, bool rotated)
 {
-    const QRectF &r = partRect;
     const int p = DecorationRenderer::TexturePad;
 
-    const int x0 = r.x();
-    const int y0 = r.y();
-    const int x1 = r.x() + r.width();
-    const int y1 = r.y() + r.height();
+    const double x0 = partRect.x();
+    const double y0 = partRect.y();
+    const double x1 = partRect.x() + partRect.width();
+    const double y1 = partRect.y() + partRect.height();
 
     WindowQuad quad;
     if (rotated) {
         const int u0 = textureOffset.y() + p;
         const int v0 = textureOffset.x() + p;
-        const int u1 = textureOffset.y() + p + std::round(r.width() * devicePixelRatio);
-        const int v1 = textureOffset.x() + p + std::round(r.height() * devicePixelRatio);
+        const int u1 = textureOffset.y() + p + std::round(partRect.width() * devicePixelRatio);
+        const int v1 = textureOffset.x() + p + std::round(partRect.height() * devicePixelRatio);
 
         quad[0] = WindowVertex(x0, y0, v0, u1); // Top-left
         quad[1] = WindowVertex(x1, y0, v0, u0); // Top-right
         quad[2] = WindowVertex(x1, y1, v1, u0); // Bottom-right
         quad[3] = WindowVertex(x0, y1, v1, u1); // Bottom-left
+
+        qWarning() << "\tdeco quad:" << partRect << "&" << textureOffset << "->" << x0 << y0 << x1 << y1 << "and" << u0 << v0 << u1 << v1;
     } else {
         const int u0 = textureOffset.x() + p;
         const int v0 = textureOffset.y() + p;
-        const int u1 = textureOffset.x() + p + std::round(r.width() * devicePixelRatio);
-        const int v1 = textureOffset.y() + p + std::round(r.height() * devicePixelRatio);
+        const int u1 = textureOffset.x() + p + std::round(partRect.width() * devicePixelRatio);
+        const int v1 = textureOffset.y() + p + std::round(partRect.height() * devicePixelRatio);
 
         quad[0] = WindowVertex(x0, y0, u0, v0); // Top-left
         quad[1] = WindowVertex(x1, y0, u1, v0); // Top-right
         quad[2] = WindowVertex(x1, y1, u1, v1); // Bottom-right
         quad[3] = WindowVertex(x0, y1, u0, v1); // Bottom-left
+
+        qWarning() << "\tdeco quad:" << partRect << "&" << textureOffset << "->" << x0 << y0 << x1 << y1 << "and" << u0 << v0 << u1 << v1;
     }
     return quad;
 }
@@ -244,15 +248,19 @@ WindowQuadList DecorationItem::buildQuads() const
 
     WindowQuadList list;
     if (left.isValid()) {
+        qWarning() << "left";
         list.append(buildQuad(left, leftPosition, devicePixelRatio, true));
     }
     if (top.isValid()) {
+        qWarning() << "top";
         list.append(buildQuad(top, topPosition, devicePixelRatio, false));
     }
     if (right.isValid()) {
+        qWarning() << "right";
         list.append(buildQuad(right, rightPosition, devicePixelRatio, true));
     }
     if (bottom.isValid()) {
+        qWarning() << "bottom";
         list.append(buildQuad(bottom, bottomPosition, devicePixelRatio, false));
     }
     return list;
