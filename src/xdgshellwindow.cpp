@@ -124,7 +124,6 @@ void XdgSurfaceWindow::sendConfigure()
     configureEvent->gravity = m_nextGravity;
     configureEvent->flags |= m_configureFlags;
     m_configureFlags = {};
-    qWarning() << "SEND CONFIGURE" << configureEvent;
     m_configureEvents.append(configureEvent);
 }
 
@@ -705,7 +704,6 @@ XdgSurfaceConfigure *XdgToplevelWindow::sendRoleConfigure() const
     configureEvent->states = m_nextStates;
     configureEvent->decoration = m_nextDecoration;
     configureEvent->serial = serial;
-    qWarning() << "sendRoleConfigure" << m_nextStates;
     return configureEvent;
 }
 
@@ -818,7 +816,7 @@ static Qt::Edges anchorsForQuickTileMode(QuickTileMode mode)
 void XdgToplevelWindow::doSetQuickTileMode()
 {
     const Qt::Edges anchors = anchorsForQuickTileMode(m_requestedQuickTileMode);
-    qWarning() << "AAAAdoSetQuickTileMode" << m_requestedQuickTileMode << anchors;
+
     if (anchors & Qt::LeftEdge) {
         m_nextStates |= XdgToplevelInterface::State::TiledLeft;
     } else {
@@ -845,7 +843,6 @@ void XdgToplevelWindow::doSetQuickTileMode()
 
     Tile *newTile = workspace()->tileManager(output())->quickTile(m_requestedQuickTileMode);
     if (newTile) {
-        qWarning() << "RESIZING" << newTile->absoluteGeometry() << frameGeometry();
         moveResize(newTile->absoluteGeometry());
     } else if (tile()) {
         moveResize(quickTileGeometryRestore());
@@ -1029,7 +1026,7 @@ void XdgToplevelWindow::handleResizeRequested(SeatInterface *seat, XdgToplevelIn
 void XdgToplevelWindow::handleStatesAcknowledged(const XdgToplevelInterface::States &states)
 {
     const XdgToplevelInterface::States delta = m_acknowledgedStates ^ states;
-    qWarning() << "DELTA" << delta;
+    qWarning() << "handleStatesAcknowledged" << delta;
     if (delta & XdgToplevelInterface::State::Maximized) {
         MaximizeMode maximizeMode = MaximizeRestore;
         if (states & XdgToplevelInterface::State::MaximizedHorizontal) {
@@ -1058,14 +1055,9 @@ void XdgToplevelWindow::handleStatesAcknowledged(const XdgToplevelInterface::Sta
         if (states & XdgToplevelInterface::State::TiledBottom) {
             newTileMode |= QuickTileFlag::Bottom; // | QuickTileFlag::Horizontal;
         }
-        qWarning() << "handleStatesAcknowledged" << newTileMode;
-        // if (newTileMode != quickTileMode() && newTileMode != QuickTileFlag::Maximize && newTileMode != QuickTileFlag::Maximize && newTileMode != QuickTileFlag::None) {
+
         if (newTileMode != quickTileMode()) {
-            // updateQuickTileMode(newTileMode);
-            // setQuickTileMode(newTileMode);
-            // doSetQuickTileMode();
             setTile(workspace()->tileManager(output())->quickTile(newTileMode));
-            qWarning() << "BBBBB new" << newTileMode << "old" << quickTileMode() << tile();
         }
     }
 
@@ -1622,24 +1614,12 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
         }
     }
 
-    auto oldTile = tile();
-    /* if (m_requestedMaximizeMode == MaximizeFull) {
-          if (options->electricBorderMaximize()) {
-              updateQuickTileMode(QuickTileFlag::Maximize);
-          } else {
-              updateQuickTileMode(QuickTileFlag::None);
-          }
-          setTile(nullptr);
-      } else {
-          updateQuickTileMode(QuickTileFlag::None);
-      }*/
     if (m_requestedMaximizeMode == MaximizeFull) {
         if (options->electricBorderMaximize()) {
             updateQuickTileMode(QuickTileFlag::Maximize);
         } else {
             updateQuickTileMode(QuickTileFlag::None);
         }
-        // setTile(nullptr);
     } else {
         updateQuickTileMode(QuickTileFlag::None);
     }
@@ -1648,10 +1628,7 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
     if (currentQuickTileMode != quickTileMode()) {
         doSetQuickTileMode();
     }
-    /*  if (!oldTile && !tile()) {
-          Q_EMIT quickTileModeChanged();
-      }
-  */
+
     doSetMaximized();
 }
 
