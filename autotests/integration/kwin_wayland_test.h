@@ -242,6 +242,7 @@ public:
         TiledBottom = 0x100,
         Suspended = 0x200,
         Maximized = MaximizedHorizontal | MaximizedVertical,
+        TiledMaximized = TiledLeft | TiledTop | TiledRight | TiledBottom
     };
     Q_DECLARE_FLAGS(States, State)
 
