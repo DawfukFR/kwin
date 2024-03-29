@@ -3371,8 +3371,6 @@ void Window::resize(const QSizeF &size)
 
 void Window::moveResize(const QRectF &rect)
 {
-    qWarning() << "moveResize" << frameGeometry() << rect;
-
     setMoveResizeGeometry(rect);
     moveResizeInternal(rect, MoveResizeMode::MoveResize);
 }

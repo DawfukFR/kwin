@@ -1026,7 +1026,7 @@ void XdgToplevelWindow::handleResizeRequested(SeatInterface *seat, XdgToplevelIn
 void XdgToplevelWindow::handleStatesAcknowledged(const XdgToplevelInterface::States &states)
 {
     const XdgToplevelInterface::States delta = m_acknowledgedStates ^ states;
-    qWarning() << "handleStatesAcknowledged" << delta;
+
     if (delta & XdgToplevelInterface::State::Maximized) {
         MaximizeMode maximizeMode = MaximizeRestore;
         if (states & XdgToplevelInterface::State::MaximizedHorizontal) {

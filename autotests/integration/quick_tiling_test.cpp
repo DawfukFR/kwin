@@ -35,8 +35,6 @@
 #include <QTextStream>
 
 #include <netwm.h>
-#include <qlogging.h>
-#include <qtestcase.h>
 #include <xcb/xcb_icccm.h>
 
 #include <linux/input.h>
@@ -175,35 +173,31 @@ void QuickTilingTest::testQuickTiling()
     QFETCH(QuickTileMode, mode);
     QFETCH(QRectF, expectedGeometry);
     window->setQuickTileMode(mode, true);
-    QVERIFY(surfaceConfigureRequestedSpy.wait());
-    QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
 
-    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-    QVERIFY(quickTileChangedSpy.wait());
-    QCOMPARE(quickTileChangedSpy.count(), 1);
     // at this point the geometry did not yet change
-    //    QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
-
-    // but quick tile mode already changed
-    QCOMPARE(window->quickTileMode(), mode);
+    QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
+    // but requested quick tile mode already changed, proper quickTileMode not yet
+    QCOMPARE(window->requestedQuickTileMode(), mode);
 
     // but we got requested a new geometry
-    //  QVERIFY(surfaceConfigureRequestedSpy.wait());
-    //  QCOMPARE(surfaceConfigureRequestedSpy.count(), 3);
+    QVERIFY(surfaceConfigureRequestedSpy.wait());
+    QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
     QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), expectedGeometry.size());
 
     // attach a new image
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), expectedGeometry.size().toSize(), Qt::red);
-    //  QVERIFY(frameGeometryChangedSpy.wait());
+
+    QVERIFY(frameGeometryChangedSpy.wait());
     QCOMPARE(frameGeometryChangedSpy.count(), 1);
     QCOMPARE(window->frameGeometry(), expectedGeometry);
+    QCOMPARE(quickTileChangedSpy.count(), 1);
+    QCOMPARE(window->quickTileMode(), mode);
+
     // send window to other screen
     QList<Output *> outputs = workspace()->outputs();
     QCOMPARE(window->output(), outputs[0]);
     window->sendToOutput(outputs[1]);
-
     QCOMPARE(window->output(), outputs[1]);
     // quick tile should not be changed
     QCOMPARE(window->quickTileMode(), mode);
@@ -211,12 +205,14 @@ void QuickTilingTest::testQuickTiling()
 
     // now try to toggle again
     window->setQuickTileMode(mode, true);
+    QTEST(window->requestedQuickTileMode(), "expectedModeAfterToggle");
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     QCOMPARE(surfaceConfigureRequestedSpy.count(), 3);
 
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
     QVERIFY(quickTileChangedSpy.wait());
+    QCOMPARE(quickTileChangedSpy.count(), 2);
     QTEST(window->quickTileMode(), "expectedModeAfterToggle");
 }
 
@@ -258,57 +254,55 @@ void QuickTilingTest::testQuickMaximizing()
     QSignalSpy maximizeChangedSpy(window, &Window::maximizedChanged);
 
     window->setQuickTileMode(QuickTileFlag::Maximize, true);
-    QVERIFY(surfaceConfigureRequestedSpy.wait());
-    QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
-    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-    QVERIFY(quickTileChangedSpy.wait());
-    QCOMPARE(quickTileChangedSpy.count(), 1);
 
-    // geometry changed
-    QCOMPARE(window->frameGeometry(), QRect(0, 0, 1280, 1024));
-    // but quick tile mode already changed
-    QCOMPARE(window->quickTileMode(), QuickTileFlag::Maximize);
+    // at this point the geometry did not yet change
+    QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
+    // but requested quick tile mode already changed
+    QCOMPARE(window->requestedQuickTileMode(), QuickTileFlag::Maximize);
     QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
 
     // but we got requested a new geometry
-    // QVERIFY(surfaceConfigureRequestedSpy.wait());
-    //  QCOMPARE(surfaceConfigureRequestedSpy.count(), 3);
+    QVERIFY(surfaceConfigureRequestedSpy.wait());
+    QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
     QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), QSize(1280, 1024));
 
     // attach a new image
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), QSize(1280, 1024), Qt::red);
 
-    //  QVERIFY(frameGeometryChangedSpy.wait());
+    QVERIFY(frameGeometryChangedSpy.wait());
     QCOMPARE(frameGeometryChangedSpy.count(), 1);
+    QCOMPARE(quickTileChangedSpy.count(), 1);
+    QCOMPARE(window->quickTileMode(), QuickTileFlag::Maximize);
     QCOMPARE(window->frameGeometry(), QRect(0, 0, 1280, 1024));
     QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
 
     // window is now set to maximised
     QCOMPARE(maximizeChangedSpy.count(), 1);
     QCOMPARE(window->maximizeMode(), MaximizeFull);
-    //  QCOMPARE(window->tile(), nullptr);
 
     // go back to quick tile none
     QFETCH(QuickTileMode, mode);
     window->setQuickTileMode(mode, true);
+    QCOMPARE(window->requestedQuickTileMode(), QuickTileMode(QuickTileFlag::None));
+    // geometry not yet changed
+    QCOMPARE(window->frameGeometry(), QRect(0, 0, 1280, 1024));
+    QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
+    // we got requested a new geometry
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     QCOMPARE(surfaceConfigureRequestedSpy.count(), 3);
     QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), QSize(100, 50));
-    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-    QVERIFY(quickTileChangedSpy.wait());
-    QCOMPARE(quickTileChangedSpy.count(), 2);
-    QCOMPARE(window->quickTileMode(), QuickTileMode(QuickTileFlag::None));
-    // geometry already changed
-    QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
-    QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
 
     // render again
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), QSize(100, 50), Qt::yellow);
+    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::yellow);
 
+    QVERIFY(frameGeometryChangedSpy.wait());
+    QCOMPARE(frameGeometryChangedSpy.count(), 2);
+    QCOMPARE(quickTileChangedSpy.count(), 2);
+    QCOMPARE(window->quickTileMode(), QuickTileMode(QuickTileFlag::None));
+    QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
+    QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
     QCOMPARE(maximizeChangedSpy.count(), 2);
 }
 
@@ -316,14 +310,13 @@ void QuickTilingTest::testQuickTilingKeyboardMove_data()
 {
     QTest::addColumn<QPoint>("targetPos");
     QTest::addColumn<QuickTileMode>("expectedMode");
-    QTest::addColumn<QSize>("expectedSize");
 
-    QTest::newRow("topRight") << QPoint(2559, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Right) << QSize(640, 512);
-    QTest::newRow("right") << QPoint(2559, 512) << QuickTileMode(QuickTileFlag::Right) << QSize(640, 1024);
-    QTest::newRow("bottomRight") << QPoint(2559, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Right) << QSize(640, 512);
-    QTest::newRow("bottomLeft") << QPoint(0, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Left) << QSize(640, 512);
-    QTest::newRow("Left") << QPoint(0, 512) << QuickTileMode(QuickTileFlag::Left) << QSize(640, 1024);
-    QTest::newRow("topLeft") << QPoint(0, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Left) << QSize(640, 512);
+    QTest::newRow("topRight") << QPoint(2559, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Right);
+    QTest::newRow("right") << QPoint(2559, 512) << QuickTileMode(QuickTileFlag::Right);
+    QTest::newRow("bottomRight") << QPoint(2559, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Right);
+    QTest::newRow("bottomLeft") << QPoint(0, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Left);
+    QTest::newRow("Left") << QPoint(0, 512) << QuickTileMode(QuickTileFlag::Left);
+    QTest::newRow("topLeft") << QPoint(0, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Left);
 }
 
 void QuickTilingTest::testQuickTilingKeyboardMove()
@@ -342,15 +335,19 @@ void QuickTilingTest::testQuickTilingKeyboardMove()
     QCOMPARE(window->quickTileMode(), QuickTileMode(QuickTileFlag::None));
     QCOMPARE(window->maximizeMode(), MaximizeRestore);
 
-    QSignalSpy quickTileChangedSpy(window, &Window::quickTileModeChanged);
-    QSignalSpy surfaceConfigureRequestedSpy(shellSurface->xdgSurface(), &Test::XdgSurface::configureRequested);
+    // We have to receive a configure event when the window becomes active.
     QSignalSpy toplevelConfigureRequestedSpy(shellSurface.get(), &Test::XdgToplevel::configureRequested);
+    QSignalSpy surfaceConfigureRequestedSpy(shellSurface->xdgSurface(), &Test::XdgSurface::configureRequested);
+    QVERIFY(surfaceConfigureRequestedSpy.wait());
+    QCOMPARE(surfaceConfigureRequestedSpy.count(), 1);
+
+    QSignalSpy quickTileChangedSpy(window, &Window::quickTileModeChanged);
+
     workspace()->performWindowOperation(window, Options::UnrestrictedMoveOp);
     QCOMPARE(window, workspace()->moveResizeWindow());
     QCOMPARE(Cursors::self()->mouse()->pos(), QPoint(50, 25));
 
     QFETCH(QPoint, targetPos);
-    QFETCH(QSize, expectedSize);
     quint32 timestamp = 1;
     Test::keyboardKeyPressed(KEY_LEFTCTRL, timestamp++);
     while (Cursors::self()->mouse()->pos().x() > targetPos.x()) {
@@ -369,10 +366,6 @@ void QuickTilingTest::testQuickTilingKeyboardMove()
         Test::keyboardKeyPressed(KEY_UP, timestamp++);
         Test::keyboardKeyReleased(KEY_UP, timestamp++);
     }
-    // One activate configure event
-    QVERIFY(surfaceConfigureRequestedSpy.wait());
-    QCOMPARE(surfaceConfigureRequestedSpy.count(), 1);
-
     Test::keyboardKeyReleased(KEY_LEFTCTRL, timestamp++);
     Test::keyboardKeyPressed(KEY_ENTER, timestamp++);
     Test::keyboardKeyReleased(KEY_ENTER, timestamp++);
@@ -381,7 +374,7 @@ void QuickTilingTest::testQuickTilingKeyboardMove()
 
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
-    QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), expectedSize);
+
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
     QVERIFY(quickTileChangedSpy.wait());
@@ -437,25 +430,19 @@ void QuickTilingTest::testQuickTilingPointerMove()
     Test::pointerButtonPressed(BTN_LEFT, timestamp++);
     Test::pointerMotion(pointerPos, timestamp++);
     Test::pointerButtonReleased(BTN_LEFT, timestamp++);
-
+    QTEST(window->requestedQuickTileMode(), "expectedMode");
+    QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
     QVERIFY(surfaceConfigureRequestedSpy.wait());
-    QCOMPARE(frameGeometryChangedSpy.size(), 1);
-    QCOMPARE(window->frameGeometry().size(), QSize(100, 50));
     QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
     QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), tileSize);
-    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-    QVERIFY(quickTileChangedSpy.wait());
-
-    QCOMPARE(quickTileChangedSpy.count(), 1);
-    QTEST(window->quickTileMode(), "expectedMode");
-    QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
 
     // attach a new image
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), tileSize, Qt::red);
-    QCOMPARE(frameGeometryChangedSpy.size(), 2);
+    QVERIFY(frameGeometryChangedSpy.wait());
     QCOMPARE(window->frameGeometry().size(), tileSize);
+    QCOMPARE(quickTileChangedSpy.count(), 1);
+    QTEST(window->quickTileMode(), "expectedMode");
 
     // verify that geometry restore is correct after user untiles the window, but changes
     // their mind and tiles the window again while still holding left button
@@ -464,44 +451,47 @@ void QuickTilingTest::testQuickTilingPointerMove()
 
     Test::pointerButtonPressed(BTN_LEFT, timestamp++); // untile the window
     Test::pointerMotion(QPoint(1280, 1024) / 2, timestamp++);
-
+    QCOMPARE(window->requestedQuickTileMode(), QuickTileMode(QuickTileFlag::None));
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     QCOMPARE(surfaceConfigureRequestedSpy.count(), 3);
     QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), QSize(100, 50));
-    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-    QVERIFY(quickTileChangedSpy.wait());
 
+    // attach a new image
+    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
+    Test::render(surface.get(), QSize(100, 50), Qt::red);
+    QVERIFY(frameGeometryChangedSpy.wait());
+    QCOMPARE(window->frameGeometry().size(), QSize(100, 50));
     QCOMPARE(quickTileChangedSpy.count(), 2);
     QCOMPARE(window->quickTileMode(), QuickTileMode(QuickTileFlag::None));
 
     Test::pointerMotion(pointerPos, timestamp++); // tile the window again
     Test::pointerButtonReleased(BTN_LEFT, timestamp++);
-
+    QTEST(window->requestedQuickTileMode(), "expectedMode");
+    QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     QCOMPARE(surfaceConfigureRequestedSpy.count(), 4);
     QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), tileSize);
-    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-    QVERIFY(quickTileChangedSpy.wait());
 
+    // attach a new image
+    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
+    Test::render(surface.get(), QSize(100, 50), Qt::red);
+    QVERIFY(frameGeometryChangedSpy.wait());
+    QCOMPARE(window->frameGeometry().size(), QSize(100, 50));
     QCOMPARE(quickTileChangedSpy.count(), 3);
     QTEST(window->quickTileMode(), "expectedMode");
-    QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
 }
 
 void QuickTilingTest::testQuickTilingTouchMove_data()
 {
     QTest::addColumn<QPoint>("targetPos");
     QTest::addColumn<QuickTileMode>("expectedMode");
-    QTest::addColumn<QSize>("tileSize");
 
-    QTest::newRow("topRight") << QPoint(2559, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Right) << QSize(640, 476);
-    QTest::newRow("right") << QPoint(2559, 512) << QuickTileMode(QuickTileFlag::Right) << QSize(640, 988);
-    QTest::newRow("bottomRight") << QPoint(2559, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Right) << QSize(640, 476);
-    QTest::newRow("bottomLeft") << QPoint(0, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Left) << QSize(640, 476);
-    QTest::newRow("Left") << QPoint(0, 512) << QuickTileMode(QuickTileFlag::Left) << QSize(640, 988);
-    QTest::newRow("topLeft") << QPoint(0, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Left) << QSize(640, 476);
+    QTest::newRow("topRight") << QPoint(2559, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Right);
+    QTest::newRow("right") << QPoint(2559, 512) << QuickTileMode(QuickTileFlag::Right);
+    QTest::newRow("bottomRight") << QPoint(2559, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Right);
+    QTest::newRow("bottomLeft") << QPoint(0, 1023) << QuickTileMode(QuickTileFlag::Bottom | QuickTileFlag::Left);
+    QTest::newRow("Left") << QPoint(0, 512) << QuickTileMode(QuickTileFlag::Left);
+    QTest::newRow("topLeft") << QPoint(0, 24) << QuickTileMode(QuickTileFlag::Top | QuickTileFlag::Left);
 }
 
 void QuickTilingTest::testQuickTilingTouchMove()
@@ -511,8 +501,6 @@ void QuickTilingTest::testQuickTilingTouchMove()
     std::unique_ptr<KWayland::Client::Surface> surface(Test::createSurface());
     std::unique_ptr<Test::XdgToplevel> shellSurface(Test::createXdgToplevelSurface(surface.get(), Test::CreationSetup::CreateOnly));
     std::unique_ptr<Test::XdgToplevelDecorationV1> deco(Test::createXdgToplevelDecorationV1(shellSurface.get()));
-
-    QFETCH(QSize, tileSize);
 
     QSignalSpy decorationConfigureRequestedSpy(deco.get(), &Test::XdgToplevelDecorationV1::configureRequested);
     QSignalSpy surfaceConfigureRequestedSpy(shellSurface->xdgSurface(), &Test::XdgSurface::configureRequested);
@@ -557,18 +545,18 @@ void QuickTilingTest::testQuickTilingTouchMove()
     // TODO: we should test both cases with fixed fake decoration for autotests.
     const bool hasBorders = Workspace::self()->decorationBridge()->settings()->borderSize() != KDecoration2::BorderSize::None;
 
+    QTEST(window->requestedQuickTileMode(), "expectedMode");
     QVERIFY(surfaceConfigureRequestedSpy.wait());
-    QCOMPARE(surfaceConfigureRequestedSpy.count(), 3);
-    QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), tileSize);
+    QTRY_COMPARE(surfaceConfigureRequestedSpy.count(), hasBorders ? 4 : 3);
+    QCOMPARE(false, toplevelConfigureRequestedSpy.last().first().toSize().isEmpty());
+
+    // attach a new image
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-    QVERIFY(quickTileChangedSpy.wait());
 
+    QVERIFY(quickTileChangedSpy.wait());
     QCOMPARE(quickTileChangedSpy.count(), 1);
     QTEST(window->quickTileMode(), "expectedMode");
-    // QVERIFY(surfaceConfigureRequestedSpy.wait());
-    // QTRY_COMPARE(surfaceConfigureRequestedSpy.count(), hasBorders ? 4 : 3);
-    QCOMPARE(false, toplevelConfigureRequestedSpy.last().first().toSize().isEmpty());
 }
 
 void QuickTilingTest::testX11QuickTiling_data()
@@ -794,7 +782,6 @@ void QuickTilingTest::testShortcut()
         QDBusConnection::sessionBus().asyncCall(msg);
 
         QVERIFY(surfaceConfigureRequestedSpy.wait());
-        qWarning() << toplevelConfigureRequestedSpy << surfaceConfigureRequestedSpy.count();
         shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
         Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
         QVERIFY(quickTileChangedSpy.wait());
@@ -875,23 +862,27 @@ void QuickTilingTest::testScript()
     QSignalSpy runningChangedSpy(s, &AbstractScript::runningChanged);
     s->run();
 
-    QVERIFY(surfaceConfigureRequestedSpy.wait());
-    QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
-    QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), expectedGeometry.size());
-    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
-    Test::render(surface.get(), toplevelConfigureRequestedSpy.last().at(0).toSize(), Qt::red);
-
-    QVERIFY(quickTileChangedSpy.wait());
-    QCOMPARE(quickTileChangedSpy.count(), 1);
-
+    QVERIFY(runningChangedSpy.wait());
     QCOMPARE(runningChangedSpy.count(), 1);
     QCOMPARE(runningChangedSpy.first().first().toBool(), true);
 
-    // geometry did already change
-    QCOMPARE(window->frameGeometry(), expectedGeometry);
-    // but quick tile mode already changed
-    QCOMPARE(window->quickTileMode(), expectedMode);
+    // at this point the geometry did not yet change
+    QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
+    // but requested quick tile mode already changed
+    QCOMPARE(window->requestedQuickTileMode(), expectedMode);
 
+    // but we got requested a new geometry
+    QVERIFY(surfaceConfigureRequestedSpy.wait());
+    QCOMPARE(surfaceConfigureRequestedSpy.count(), 2);
+    QCOMPARE(toplevelConfigureRequestedSpy.last().at(0).toSize(), expectedGeometry.size());
+
+    // attach a new image
+    shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
+    Test::render(surface.get(), expectedGeometry.size(), Qt::red);
+
+    QVERIFY(frameGeometryChangedSpy.wait());
+    QCOMPARE(quickTileChangedSpy.count(), 1);
+    QCOMPARE(window->quickTileMode(), expectedMode);
     QEXPECT_FAIL("maximize", "Geometry changed called twice for maximize", Continue);
     QCOMPARE(frameGeometryChangedSpy.count(), 1);
     QCOMPARE(window->frameGeometry(), expectedGeometry);
