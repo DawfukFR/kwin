@@ -1562,8 +1562,7 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
         setNoBorder(m_requestedMaximizeMode == MaximizeFull);
     }
 
-    // Normal maximized windows are now quickTileMode() == QuickTileFlag::Maximize
-    if (currentQuickTileMode == QuickTileMode(QuickTileFlag::None) /*|| currentQuickTileMode == QuickTileMode(QuickTileFlag::Maximize)*/) {
+    if (currentQuickTileMode == QuickTileMode(QuickTileFlag::None)) {
         QRectF savedGeometry = geometryRestore();
         if (!(oldMode & MaximizeVertical)) {
             savedGeometry.setTop(oldGeometry.top());

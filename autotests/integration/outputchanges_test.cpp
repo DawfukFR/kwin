@@ -381,7 +381,6 @@ void OutputChangesTest::testMaximizedWindowRestoredAfterEnablingOutput()
         auto changeSet = config2.changeSet(outputs[1]);
         changeSet->enabled = true;
     }
-
     workspace()->applyOutputConfiguration(config2);
 
     // The window will be moved back to the right monitor, the geometry restore will be updated too.
