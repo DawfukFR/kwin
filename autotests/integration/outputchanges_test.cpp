@@ -381,9 +381,9 @@ void OutputChangesTest::testMaximizedWindowRestoredAfterEnablingOutput()
         auto changeSet = config2.changeSet(outputs[1]);
         changeSet->enabled = true;
     }
-    qWarning() << "APPLYING";
+
     workspace()->applyOutputConfiguration(config2);
-    qWarning() << "APPLIED";
+
     // The window will be moved back to the right monitor, the geometry restore will be updated too.
     QCOMPARE(window->frameGeometry(), QRectF(1280, 0, 1280, 1024));
     QCOMPARE(window->moveResizeGeometry(), QRectF(1280, 0, 1280, 1024));

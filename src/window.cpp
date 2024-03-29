@@ -3707,7 +3707,6 @@ QRectF Window::ensureSpecialStateGeometry(const QRectF &geometry)
 
 void Window::sendToOutput(Output *newOutput)
 {
-    qWarning() << "SENDING TO" << newOutput;
     newOutput = rules()->checkOutput(newOutput);
     if (isActive()) {
         workspace()->setActiveOutput(newOutput);
@@ -3778,9 +3777,7 @@ void Window::checkWorkspacePosition(QRectF oldGeometry, const VirtualDesktop *ol
             newOutput = workspace()->outputAt(newGeom.center());
         }
         // we need to find the screen area as it was before the change
-        // FIXME: why?
-        qWarning() << "AAAAAA" << (moveResizeOutput() == output()) << moveResizeOutput() << output() << "newGeom1" << newGeom;
-        oldScreenArea = workspace()->previousScreenSizes().value(output());
+        oldScreenArea = workspace()->previousScreenSizes().value(moveResizeOutput());
         if (oldScreenArea.isNull()) {
             oldScreenArea = newOutput->geometry();
         }
