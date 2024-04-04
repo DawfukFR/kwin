@@ -23,6 +23,7 @@ namespace KWin
 class SceneDelegate;
 class Scene;
 class SyncReleasePoint;
+class DrmDevice;
 
 /**
  * The Item class is the base class for items in the scene.
@@ -113,6 +114,7 @@ public:
     virtual void preprocess();
     const ColorDescription &colorDescription() const;
     PresentationModeHint presentationHint() const;
+    virtual void setScanoutHint(DrmDevice *device, const QHash<uint32_t, QList<uint64_t>> &drmFormats);
 
 Q_SIGNALS:
     void childAdded(Item *item);

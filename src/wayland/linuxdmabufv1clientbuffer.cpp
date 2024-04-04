@@ -11,6 +11,7 @@
 */
 
 #include "linuxdmabufv1clientbuffer.h"
+#include "core/drmdevice.h"
 #include "core/renderbackend.h"
 #include "linuxdmabufv1clientbuffer_p.h"
 #include "surface_p.h"
@@ -323,7 +324,7 @@ void LinuxDmaBufV1ClientBufferIntegration::setSupportedFormatsWithModifiers(cons
         d->supportedModifiers = set;
         d->mainDevice = tranches.first().device;
         d->table = std::make_unique<LinuxDmaBufV1FormatTable>(set);
-        d->defaultFeedback->setTranches(tranches);
+        d->defaultFeedback->setScanoutTranches(tranches);
     }
 }
 
@@ -390,7 +391,7 @@ LinuxDmaBufV1Feedback::LinuxDmaBufV1Feedback(LinuxDmaBufV1ClientBufferIntegratio
 
 LinuxDmaBufV1Feedback::~LinuxDmaBufV1Feedback() = default;
 
-void LinuxDmaBufV1Feedback::setTranches(const QList<Tranche> &tranches)
+void LinuxDmaBufV1Feedback::setScanoutTranches(const QList<Tranche> &tranches)
 {
     if (d->m_tranches != tranches) {
         d->m_tranches = tranches;
@@ -399,6 +400,35 @@ void LinuxDmaBufV1Feedback::setTranches(const QList<Tranche> &tranches)
             d->send(resource);
         }
     }
+}
+
+QList<LinuxDmaBufV1Feedback::Tranche> LinuxDmaBufV1Feedback::defaultTranches() const
+{
+    return d->m_bufferintegration->defaultFeedback->d->m_tranches;
+}
+
+QList<LinuxDmaBufV1Feedback::Tranche> LinuxDmaBufV1Feedback::intersect(const QList<Tranche> &tranches, DrmDevice *device, const QHash<uint32_t, QList<uint64_t>> &formats)
+{
+    QList<LinuxDmaBufV1Feedback::Tranche> ret;
+    for (const auto &tranche : tranches) {
+        LinuxDmaBufV1Feedback::Tranche scanoutTranche;
+        for (auto it = tranche.formatTable.constBegin(); it != tranche.formatTable.constEnd(); it++) {
+            const uint32_t format = it.key();
+            const auto trancheModifiers = it.value();
+            const auto drmModifiers = formats[format];
+            for (const auto &mod : trancheModifiers) {
+                if (drmModifiers.contains(mod)) {
+                    scanoutTranche.formatTable[format] << mod;
+                }
+            }
+        }
+        if (!scanoutTranche.formatTable.isEmpty()) {
+            scanoutTranche.device = device->deviceId();
+            scanoutTranche.flags = LinuxDmaBufV1Feedback::TrancheFlag::Scanout;
+            ret.push_back(scanoutTranche);
+        }
+    }
+    return ret;
 }
 
 LinuxDmaBufV1FeedbackPrivate *LinuxDmaBufV1FeedbackPrivate::get(LinuxDmaBufV1Feedback *q)

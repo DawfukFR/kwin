@@ -22,6 +22,7 @@ class Display;
 class LinuxDmaBufV1ClientBufferIntegrationPrivate;
 class LinuxDmaBufV1FeedbackPrivate;
 class RenderBackend;
+class DrmDevice;
 
 class KWIN_EXPORT LinuxDmaBufV1Feedback : public QObject
 {
@@ -45,7 +46,11 @@ public:
      * indicating a higher priority / a more optimal configuration.
      * The main device does not need to be included
      */
-    void setTranches(const QList<Tranche> &tranches);
+    void setScanoutTranches(const QList<Tranche> &tranches);
+
+    QList<Tranche> defaultTranches() const;
+
+    static QList<Tranche> intersect(const QList<Tranche> &tranches, DrmDevice *device, const QHash<uint32_t, QList<uint64_t>> &formats);
 
 private:
     LinuxDmaBufV1Feedback(LinuxDmaBufV1ClientBufferIntegrationPrivate *integration);

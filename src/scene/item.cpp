@@ -506,6 +506,10 @@ void Item::setPresentationHint(PresentationModeHint hint)
     m_presentationHint = hint;
 }
 
+void Item::setScanoutHint(DrmDevice *device, const QHash<uint32_t, QList<uint64_t>> &drmFormats)
+{
+}
+
 } // namespace KWin
 
 #include "moc_item.cpp"

@@ -5,6 +5,7 @@
 */
 
 #include "outputlayer.h"
+#include "scene/surfaceitem.h"
 
 namespace KWin
 {
@@ -69,9 +70,47 @@ bool OutputLayer::needsRepaint() const
     return !m_repaints.isEmpty();
 }
 
-bool OutputLayer::scanout(SurfaceItem *surfaceItem)
+bool OutputLayer::doAttemptScanout(GraphicsBuffer *buffer, const QRectF &sourceRect, const QSizeF &targetSize, OutputTransform transform, const ColorDescription &color, const QRegion &damage)
 {
     return false;
+}
+
+bool OutputLayer::attemptScanout(Item *item)
+{
+    const auto surfaceItem = qobject_cast<SurfaceItem *>(item);
+    if (!surfaceItem || !surfaceItem->pixmap() || !surfaceItem->pixmap()->buffer()) {
+        return false;
+    }
+    const auto buffer = surfaceItem->pixmap()->buffer();
+    const auto attrs = buffer->dmabufAttributes();
+    if (!attrs) {
+        return false;
+    }
+    const auto formats = supportedDrmFormats();
+    if (!formats.contains(attrs->format) || !formats[attrs->format].contains(attrs->modifier)) {
+        if (m_scanoutCandidate && m_scanoutCandidate != item) {
+            m_scanoutCandidate->setScanoutHint(nullptr, {});
+        }
+        m_scanoutCandidate = item;
+        item->setScanoutHint(scanoutDevice(), supportedDrmFormats());
+        return false;
+    }
+    // TODO actually do proper damage tracking
+    const bool ret = doAttemptScanout(buffer, surfaceItem->bufferSourceBox(), surfaceItem->destinationSize(), surfaceItem->bufferTransform(), item->colorDescription(), infiniteRegion());
+    if (ret) {
+        surfaceItem->resetDamage();
+        // ensure the pixmap is updated when direct scanout ends
+        surfaceItem->destroyPixmap();
+    }
+    return ret;
+}
+
+void OutputLayer::notifyNoScanoutCandidate()
+{
+    if (m_scanoutCandidate) {
+        m_scanoutCandidate->setScanoutHint(nullptr, {});
+        m_scanoutCandidate = nullptr;
+    }
 }
 
 void OutputLayer::setPosition(const QPointF &position)
