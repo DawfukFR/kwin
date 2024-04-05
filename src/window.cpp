@@ -3597,8 +3597,14 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
             tile = workspace()->tileManager(output)->bestTileForPosition(Cursors::self()->mouse()->pos());
         }
         setTile(tile);
+    } else {
+        Tile *newTile = workspace()->tileManager(output())->quickTile(m_requestedQuickTileMode);
+        if (newTile) {
+            moveResize(newTile->absoluteGeometry());
+        } else if (tile()) {
+            moveResize(quickTileGeometryRestore());
+        }
     }
-
     doSetQuickTileMode();
 }
 

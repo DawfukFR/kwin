@@ -842,12 +842,6 @@ void XdgToplevelWindow::doSetQuickTileMode()
         m_nextStates &= ~XdgToplevelInterface::State::TiledBottom;
     }
 
-    Tile *newTile = workspace()->tileManager(output())->quickTile(m_requestedQuickTileMode);
-    if (newTile) {
-        moveResize(newTile->absoluteGeometry());
-    } else if (tile()) {
-        moveResize(quickTileGeometryRestore());
-    }
     scheduleConfigure();
 }
 
@@ -1539,7 +1533,7 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
         return;
     }
 
-    auto currentQuickTileMode = quickTileMode();
+    auto currentQuickTileMode = requestedQuickTileMode();
     Q_EMIT maximizedAboutToChange(mode);
     m_requestedMaximizeMode = mode;
 
