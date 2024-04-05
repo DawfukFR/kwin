@@ -4629,9 +4629,6 @@ void X11Window::maximize(MaximizeMode mode)
     if (currentQuickTileMode != quickTileMode()) {
         doSetQuickTileMode();
     }
-    /*if (currentQuickTileMode != quickTileMode() && !oldTile && !tile()) {
-        Q_EMIT quickTileModeChanged();
-    }*/
 
     if (max_mode != old_mode) {
         Q_EMIT maximizedChanged();
