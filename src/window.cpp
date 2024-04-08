@@ -3504,17 +3504,9 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
 
     // restore from maximized so that it is possible to tile maximized windows with one hit or by dragging
     if (requestedMaximizeMode() != MaximizeRestore) {
-        Output *output = workspace()->outputAt(whichScreen);
-        Tile *tile = workspace()->tileManager(output)->quickTile(mode);
-
         if (mode != QuickTileMode(QuickTileFlag::None)) {
             m_requestedQuickTileMode = QuickTileFlag::None;
-            if (!tile) {
-                // If there is a tile, it will change the maximize state accordingly.
-                // If we unconditionally set maximize here, there will be a double
-                // quickTileModeChanged() emitted
-                setMaximize(false, false);
-            }
+            setMaximize(false, false);
             moveResize(quickTileGeometry(mode, keyboard ? moveResizeGeometry().center() : Cursors::self()->mouse()->pos()));
             // Store the mode change
             m_requestedQuickTileMode = mode;
