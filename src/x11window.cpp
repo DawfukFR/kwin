@@ -4436,8 +4436,7 @@ void X11Window::maximize(MaximizeMode mode)
         return;
     }
 
-    auto currentQuickTileMode = quickTileMode();
-    auto oldTile = tile();
+    const auto currentQuickTileMode = quickTileMode();
 
     QRectF clientArea;
     if (isElectricBorderMaximizing()) {
@@ -4615,7 +4614,6 @@ void X11Window::maximize(MaximizeMode mode)
         } else {
             updateQuickTileMode(QuickTileFlag::None);
         }
-        // setTile(nullptr);
         info->setState(NET::Max, NET::Max);
         break;
     }
