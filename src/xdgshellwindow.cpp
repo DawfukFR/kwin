@@ -1533,7 +1533,7 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
         return;
     }
 
-    auto currentQuickTileMode = requestedQuickTileMode();
+    const auto oldQuickTileMode = requestedQuickTileMode();
     Q_EMIT maximizedAboutToChange(mode);
     m_requestedMaximizeMode = mode;
 
@@ -1619,7 +1619,7 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
     }
 
     moveResize(geometry);
-    if (currentQuickTileMode != quickTileMode()) {
+    if (requestedQuickTileMode() != oldQuickTileMode) {
         doSetQuickTileMode();
     }
 
