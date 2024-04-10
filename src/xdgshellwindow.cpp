@@ -1620,9 +1620,6 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
     }
 
     moveResize(geometry);
-    if (requestedQuickTileMode() != oldQuickTileMode) {
-        doSetQuickTileMode();
-    }
 
     doSetMaximized();
 }

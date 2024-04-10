@@ -3722,7 +3722,7 @@ void Window::sendToOutput(Output *newOutput)
     const QRectF oldScreenArea = workspace()->clientArea(MaximizeArea, this, moveResizeOutput());
     const QRectF screenArea = workspace()->clientArea(MaximizeArea, this, newOutput);
 
-    if (quickTileMode() == QuickTileMode(QuickTileFlag::Custom)) {
+    if (requestedQuickTileMode() == QuickTileMode(QuickTileFlag::Custom)) {
         setTile(nullptr);
     }
 
