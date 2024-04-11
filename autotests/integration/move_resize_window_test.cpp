@@ -987,7 +987,6 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     } else {
         window->setQuickTileMode(quickTileMode, true);
     }
-
     QCOMPARE(window->requestedQuickTileMode(), quickTileMode);
     QCOMPARE(window->requestedMaximizeMode(), maximizeMode);
 
@@ -997,7 +996,6 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     QVERIFY(frameGeomtryChangedSpy.wait());
 
     QCOMPARE(window->quickTileMode(), quickTileMode);
-
     const QRectF geometry = window->moveResizeGeometry();
     const QRectF geometryRestore = window->geometryRestore();
 
@@ -1007,6 +1005,7 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     QSignalSpy interactiveMoveResizeFinishedSpy(window, &Window::interactiveMoveResizeFinished);
     QCOMPARE(workspace()->moveResizeWindow(), nullptr);
     QCOMPARE(window->isInteractiveMove(), false);
+
     QCOMPARE(window->isInteractiveResize(), false);
     workspace()->slotWindowResize();
     QCOMPARE(interactiveMoveResizeStartedSpy.count(), 1);
