@@ -6,6 +6,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
+#include "effect/globals.h"
 #include "kwin_wayland_test.h"
 
 #include "core/output.h"
@@ -172,12 +173,15 @@ void QuickTilingTest::testQuickTiling()
 
     QFETCH(QuickTileMode, mode);
     QFETCH(QRectF, expectedGeometry);
+    const QuickTileMode oldQuickTileMode = window->quickTileMode();
     window->setQuickTileMode(mode, true);
 
     // at this point the geometry did not yet change
     QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
     // but requested quick tile mode already changed, proper quickTileMode not yet
     QCOMPARE(window->requestedQuickTileMode(), mode);
+    // Actual quickTileMOde didn't change yet
+    QCOMPARE(window->quickTileMode(), oldQuickTileMode);
 
     // but we got requested a new geometry
     QVERIFY(surfaceConfigureRequestedSpy.wait());
@@ -253,12 +257,14 @@ void QuickTilingTest::testQuickMaximizing()
     QSignalSpy frameGeometryChangedSpy(window, &Window::frameGeometryChanged);
     QSignalSpy maximizeChangedSpy(window, &Window::maximizedChanged);
 
+    const QuickTileMode oldQuickTileMode = window->quickTileMode();
     window->setQuickTileMode(QuickTileFlag::Maximize, true);
 
     // at this point the geometry did not yet change
     QCOMPARE(window->frameGeometry(), QRect(0, 0, 100, 50));
     // but requested quick tile mode already changed
     QCOMPARE(window->requestedQuickTileMode(), QuickTileFlag::Maximize);
+    QCOMPARE(window->quickTileMode(), oldQuickTileMode);
     QCOMPARE(window->geometryRestore(), QRect(0, 0, 100, 50));
 
     // but we got requested a new geometry

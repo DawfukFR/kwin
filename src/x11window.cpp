@@ -4624,9 +4624,6 @@ void X11Window::maximize(MaximizeMode mode)
     blockGeometryUpdates(false);
     updateAllowedActions();
     updateWindowRules(Rules::MaximizeVert | Rules::MaximizeHoriz | Rules::Position | Rules::Size);
-    if (currentQuickTileMode != quickTileMode()) {
-        doSetQuickTileMode();
-    }
 
     if (max_mode != old_mode) {
         Q_EMIT maximizedChanged();

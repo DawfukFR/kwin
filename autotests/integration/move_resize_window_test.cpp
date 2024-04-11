@@ -968,12 +968,11 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     std::unique_ptr<Test::XdgToplevel> shellSurface(Test::createXdgToplevelSurface(surface.get()));
     QVERIFY(shellSurface != nullptr);
 
-    QSignalSpy toplevelConfigureRequestedSpy(shellSurface.get(), &Test::XdgToplevel::configureRequested);
-    QSignalSpy surfaceConfigureRequestedSpy(shellSurface->xdgSurface(), &Test::XdgSurface::configureRequested);
-
     Window *window = Test::renderAndWaitForShown(surface.get(), QSize(100, 50), Qt::blue);
     QVERIFY(window);
     QSignalSpy quickTileChangedSpy(window, &Window::quickTileModeChanged);
+    QSignalSpy toplevelConfigureRequestedSpy(shellSurface.get(), &Test::XdgToplevel::configureRequested);
+    QSignalSpy surfaceConfigureRequestedSpy(shellSurface->xdgSurface(), &Test::XdgSurface::configureRequested);
 
     QVERIFY(surfaceConfigureRequestedSpy.wait());
 
