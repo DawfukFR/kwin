@@ -26,7 +26,6 @@
 #include <KWayland/Client/surface.h>
 
 #include <linux/input.h>
-#include <qtestcase.h>
 #include <xcb/xcb_icccm.h>
 
 Q_DECLARE_METATYPE(KWin::QuickTileMode)
@@ -968,7 +967,6 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     QVERIFY(surface != nullptr);
     std::unique_ptr<Test::XdgToplevel> shellSurface(Test::createXdgToplevelSurface(surface.get()));
     QVERIFY(shellSurface != nullptr);
-
     Window *window = Test::renderAndWaitForShown(surface.get(), QSize(100, 50), Qt::blue);
     QVERIFY(window);
     QSignalSpy frameGeomtryChangedSpy(window, &Window::frameGeometryChanged);
