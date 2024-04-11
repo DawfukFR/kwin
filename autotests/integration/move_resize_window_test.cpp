@@ -971,6 +971,7 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
 
     Window *window = Test::renderAndWaitForShown(surface.get(), QSize(100, 50), Qt::blue);
     QVERIFY(window);
+    QSignalSpy frameGeomtryChangedSpy(window, &Window::frameGeometryChanged);
     QSignalSpy quickTileChangedSpy(window, &Window::quickTileModeChanged);
     QSignalSpy toplevelConfigureRequestedSpy(shellSurface.get(), &Test::XdgToplevel::configureRequested);
     QSignalSpy surfaceConfigureRequestedSpy(shellSurface->xdgSurface(), &Test::XdgSurface::configureRequested);
@@ -987,17 +988,14 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
         window->setQuickTileMode(quickTileMode, true);
     }
 
-    const bool quickTileModeWillChange = quickTileMode != window->quickTileMode();
-
     QCOMPARE(window->requestedQuickTileMode(), quickTileMode);
     QCOMPARE(window->requestedMaximizeMode(), maximizeMode);
 
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), toplevelConfigureRequestedSpy.last().first().toSize(), Qt::blue);
-    if (quickTileModeWillChange) {
-        QVERIFY(quickTileChangedSpy.wait());
-    }
+    QVERIFY(frameGeomtryChangedSpy.wait());
+
     QCOMPARE(window->quickTileMode(), quickTileMode);
 
     const QRectF geometry = window->moveResizeGeometry();
@@ -1007,7 +1005,7 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     // Start resizing the client.
     QSignalSpy interactiveMoveResizeStartedSpy(window, &Window::interactiveMoveResizeStarted);
     QSignalSpy interactiveMoveResizeFinishedSpy(window, &Window::interactiveMoveResizeFinished);
-
+    qWarning() << "Size before" << window->frameGeometry();
     QCOMPARE(workspace()->moveResizeWindow(), nullptr);
     QCOMPARE(window->isInteractiveMove(), false);
     QCOMPARE(window->isInteractiveResize(), false);
@@ -1017,15 +1015,15 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     QCOMPARE(window->isInteractiveMove(), false);
     QCOMPARE(window->isInteractiveResize(), true);
 
-    Test::pointerMotionRelative(QPoint(1, 1), 1);
+    Test::pointerMotionRelative(QPoint(10, 10), 1);
 
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), toplevelConfigureRequestedSpy.last().first().toSize(), Qt::blue);
-    if (quickTileModeWillChange) {
-        QVERIFY(quickTileChangedSpy.wait());
-    }
 
+    QVERIFY(frameGeomtryChangedSpy.wait());
+
+    qWarning() << "size after" << window->frameGeometry() << "toplevelConfigureRequestedSpy.last()" << toplevelConfigureRequestedSpy.last();
     QCOMPARE(window->quickTileMode(), QuickTileMode());
     QCOMPARE(window->requestedMaximizeMode(), MaximizeMode::MaximizeRestore);
 
@@ -1035,9 +1033,8 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     QVERIFY(surfaceConfigureRequestedSpy.wait());
     shellSurface->xdgSurface()->ack_configure(surfaceConfigureRequestedSpy.last().at(0).value<quint32>());
     Test::render(surface.get(), toplevelConfigureRequestedSpy.last().first().toSize(), Qt::blue);
-    if (quickTileModeWillChange) {
-        QVERIFY(quickTileChangedSpy.wait());
-    }
+
+    QVERIFY(frameGeomtryChangedSpy.wait());
 
     QCOMPARE(window->moveResizeGeometry(), geometry);
     QCOMPARE(window->quickTileMode(), quickTileMode);
