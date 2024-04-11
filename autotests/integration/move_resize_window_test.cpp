@@ -26,6 +26,7 @@
 #include <KWayland/Client/surface.h>
 
 #include <linux/input.h>
+#include <qtestcase.h>
 #include <xcb/xcb_icccm.h>
 
 Q_DECLARE_METATYPE(KWin::QuickTileMode)
@@ -979,6 +980,7 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     // tile / maximize window
     QFETCH(QuickTileMode, quickTileMode);
     QFETCH(MaximizeMode, maximizeMode);
+    const QRectF oldGeometryRestore = window->moveResizeGeometry();
     if (maximizeMode) {
         window->setMaximize(maximizeMode & MaximizeMode::MaximizeVertical, maximizeMode & MaximizeMode::MaximizeHorizontal);
     } else {
@@ -1001,6 +1003,7 @@ void MoveResizeWindowTest::testCancelInteractiveMoveResize()
     const QRectF geometry = window->moveResizeGeometry();
     const QRectF geometryRestore = window->geometryRestore();
 
+    QVERIFY(geometry != oldGeometryRestore);
     // Start resizing the client.
     QSignalSpy interactiveMoveResizeStartedSpy(window, &Window::interactiveMoveResizeStarted);
     QSignalSpy interactiveMoveResizeFinishedSpy(window, &Window::interactiveMoveResizeFinished);
