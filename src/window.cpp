@@ -3430,7 +3430,7 @@ QRectF Window::quickTileGeometry(QuickTileMode mode, const QPointF &pos) const
 
 void Window::updateQuickTileMode(QuickTileMode newMode)
 {
-    if (m_requestedQuickTileMode != newMode) {
+    if (m_requestedQuickTileMode == newMode) {
         return;
     }
     m_requestedQuickTileMode = newMode;
