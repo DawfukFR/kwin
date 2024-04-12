@@ -3582,6 +3582,11 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
                                          anchor.y() - geometry.height() * offset.y()));
         }
         moveResize(geometry);
+        // Custom tiles need to be untiled immediately
+        if (oldMode == QuickTileFlag::Custom) {
+            setTile(nullptr);
+            return;
+        }
     } else if (mode == QuickTileMode(QuickTileFlag::Custom)) {
         // Custom tileMode is the only one that gets immediately assigned without a roundtrip
         Tile *tile = nullptr;
@@ -3591,7 +3596,10 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
             Output *output = workspace()->outputAt(Cursors::self()->mouse()->pos());
             tile = workspace()->tileManager(output)->bestTileForPosition(Cursors::self()->mouse()->pos());
         }
+        m_requestedQuickTileMode = mode;
         setTile(tile);
+        // Don't go into setTileMode as custom tiles don't go trough configure events
+        return;
     } else {
         Tile *newTile = workspace()->tileManager(output())->quickTile(m_requestedQuickTileMode);
         if (newTile) {
@@ -3636,6 +3644,11 @@ void Window::setTile(Tile *tile)
     if (m_tile) {
         Q_ASSERT(!isDeleted());
         m_tile->addWindow(this);
+        if (m_tile->quickTileMode() == QuickTileFlag::Custom) {
+            m_requestedQuickTileMode = QuickTileFlag::Custom;
+        }
+    } else if (m_requestedQuickTileMode == QuickTileFlag::Custom) {
+        m_requestedQuickTileMode = QuickTileFlag::None;
     }
 
     Q_EMIT tileChanged(tile);
