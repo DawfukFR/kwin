@@ -297,7 +297,6 @@ void Tile::removeWindow(Window *window)
 {
     // We already ensure there is a single copy of window in m_windows
     if (m_windows.removeOne(window)) {
-        window->setTile(nullptr);
         Q_EMIT windowRemoved(window);
         Q_EMIT windowsChanged();
     }

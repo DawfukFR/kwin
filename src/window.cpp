@@ -3634,10 +3634,6 @@ void Window::setTile(Tile *tile)
 
     m_tile = tile;
 
-    if (oldTile) {
-        oldTile->removeWindow(this);
-    }
-
     if (m_tile) {
         Q_ASSERT(!isDeleted());
         m_tile->addWindow(this);
@@ -3646,6 +3642,10 @@ void Window::setTile(Tile *tile)
         }
     } else if (m_requestedQuickTileMode == QuickTileFlag::Custom) {
         m_requestedQuickTileMode = QuickTileFlag::None;
+    }
+
+    if (oldTile) {
+        oldTile->removeWindow(this);
     }
 
     Q_EMIT tileChanged(tile);
