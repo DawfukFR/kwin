@@ -3637,9 +3637,6 @@ void Window::setTile(Tile *tile)
         Q_ASSERT(!isDeleted());
         m_tile->addWindow(this);
     }
-    if (m_setTileRecursion) {
-        return;
-    }
 
     Q_EMIT tileChanged(tile);
 
