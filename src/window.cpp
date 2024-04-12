@@ -3637,11 +3637,6 @@ void Window::setTile(Tile *tile)
     if (m_tile) {
         Q_ASSERT(!isDeleted());
         m_tile->addWindow(this);
-        if (m_tile->quickTileMode() == QuickTileFlag::Custom) {
-            m_requestedQuickTileMode = QuickTileFlag::Custom;
-        }
-    } else if (m_requestedQuickTileMode == QuickTileFlag::Custom) {
-        m_requestedQuickTileMode = QuickTileFlag::None;
     }
 
     if (oldTile) {
