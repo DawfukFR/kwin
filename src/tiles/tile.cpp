@@ -288,7 +288,6 @@ void Tile::addWindow(Window *window)
     if (!m_windows.contains(window)) {
         window->moveResize(windowGeometry());
         m_windows.append(window);
-        window->setTile(this);
         Q_EMIT windowAdded(window);
         Q_EMIT windowsChanged();
     }
