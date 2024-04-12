@@ -3623,13 +3623,15 @@ void Window::setTile(Tile *tile)
 
     if (m_tile == tile) {
         return;
-    } else if (m_tile && !m_setTileRecursion) {
-        m_setTileRecursion = true;
-        m_tile->removeWindow(this);
-        m_setTileRecursion = false;
     }
 
+    Tile *oldTile = m_tile;
+
     m_tile = tile;
+
+    if (oldTile) {
+        oldTile->removeWindow(this);
+    }
 
     if (m_tile) {
         Q_ASSERT(!isDeleted());
