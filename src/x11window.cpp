@@ -4436,7 +4436,7 @@ void X11Window::maximize(MaximizeMode mode)
         return;
     }
 
-    const auto currentQuickTileMode = quickTileMode();
+    const auto currentQuickTileMode = requestedQuickTileMode();
 
     QRectF clientArea;
     if (isElectricBorderMaximizing()) {
