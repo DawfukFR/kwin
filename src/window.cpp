@@ -8,8 +8,6 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 #include "window.h"
-#include "effect/globals.h"
-#include "utils/common.h"
 
 #if KWIN_BUILD_ACTIVITIES
 #include "activities.h"
@@ -3627,13 +3625,12 @@ QuickTileMode Window::requestedQuickTileMode() const
 
 void Window::setTile(Tile *tile)
 {
-    QuickTileMode oldTileMode = quickTileMode();
-
     if (m_tile == tile) {
         return;
     }
 
     Tile *oldTile = m_tile;
+    QuickTileMode oldTileMode = quickTileMode();
 
     m_tile = tile;
 
